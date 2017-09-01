@@ -29,7 +29,7 @@ def get_first_account_alias_or_account_id():
     except Exception as e:
         LOGGER.error("Unknown error occurred loading users account alias")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 
@@ -82,7 +82,7 @@ def create_change_set(config, parameter, debug, confirm, yes):
     except Exception as e:
         LOGGER.error("Failed with unexpected error")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 @cli.command(help="execute change set")
@@ -119,7 +119,7 @@ def execute_change_set(change_set, debug, confirm, yes, region):
     except Exception as e:
         LOGGER.error("Failed with unexpected error")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 
@@ -158,7 +158,7 @@ def sync(config, parameter, debug, confirm, yes):
     except Exception as e:
         LOGGER.error("Failed with unexpected error")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 
@@ -193,7 +193,7 @@ def delete(config, debug, confirm, yes):
     except Exception as e:
         LOGGER.error("Failed with unexpected error")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 
@@ -260,7 +260,7 @@ def validate_template(template_file, confirm, yes):
     except Exception as e:
         LOGGER.error("Failed with unexpected error")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 
@@ -286,7 +286,7 @@ def encrypt(region, keyid, cleartext, confirm, yes):
     except Exception as e:
         LOGGER.error("Failed with unexpected error")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 
@@ -311,7 +311,7 @@ def decrypt(region, ciphertext, confirm, yes):
     except Exception as e:
         LOGGER.error("Failed with unexpected error")
         LOGGER.exception(e)
-        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        LOGGER.info("Please report at https://github.com/Smart421/cfn-square/issues!")
         sys.exit(1)
 
 
