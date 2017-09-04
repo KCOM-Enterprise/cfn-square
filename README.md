@@ -21,7 +21,7 @@ A CLI tool intended to simplify AWS CloudFormation handling. Derived from cfn-sp
 
 ### As python artifact:
 
-    pip install cfn-sphere
+    pip install cfn-square
 
 ## Usage
 
@@ -89,8 +89,8 @@ Requirements:
 
 Execute:
 
-    git clone https://github.com/cfn-sphere/cfn-sphere.git
-    cd cfn-sphere
+    git clone git@github.com:Smart421/cfn-square.git
+    cd cfn-square
     virtualenv .venv --python=python2.7
     source .venv/bin/activate
     pip install pybuilder
@@ -105,6 +105,7 @@ Execute:
 ## License
 
 Copyright 2015,2016 Marco Hoyer
+Copyright 2017 KCOM
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
