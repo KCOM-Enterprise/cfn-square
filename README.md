@@ -1,7 +1,7 @@
 # cfn-square
 A CLI tool intended to simplify AWS CloudFormation handling. Derived from cfn-sphere.
 
-[![Build Status](https://travis-ci.org/Smart421/cfn-square.svg?branch=master)](https://travis-ci.org/Smart421/cfn-square)
+[![Build Status](https://travis-ci.org/KCOM-Enterprise/cfn-square.svg?branch=master)](https://travis-ci.org/KCOM-Enterprise/cfn-square)
 
 ## Features
 - cfn templates in yml or json
@@ -89,7 +89,7 @@ Requirements:
 
 Execute:
 
-    git clone git@github.com:Smart421/cfn-square.git
+    git clone git@github.com:KCOM-Enterprise/cfn-square.git
     cd cfn-square
     virtualenv .venv --python=python2.7
     source .venv/bin/activate

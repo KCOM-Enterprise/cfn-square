@@ -18,7 +18,7 @@ authors = [Author('Marco Hoyer', 'marco_hoyer@gmx.de'), Author('Steve Parker', '
 description = "cfn-square - A CLI tool intended to simplify AWS CloudFormation handling."
 license = 'APACHE LICENSE, VERSION 2.0'
 summary = 'cfn-square AWS CloudFormation management cli'
-url = 'https://github.com/Smart421/cfn-square'
+url = 'https://github.com/KCOM-Enterprise/cfn-square'
 version = '0.1.37'
 
 default_task = ['clean', 'analyze', 'package']
