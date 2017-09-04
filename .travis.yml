@@ -26,5 +26,5 @@ deploy:
   skip_cleanup: true
   on:
     repo: Smart421/cfn-square
-    branch: master
+    branch: stable
     python: '3.5'
