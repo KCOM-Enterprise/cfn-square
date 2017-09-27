@@ -12,14 +12,14 @@ use_plugin("python.distutils")
 use_plugin('copy_resources')
 use_plugin('filter_resources')
 
-name = "cfn-sphere"
+name = "cfn-square"
 
-authors = [Author('Marco Hoyer', 'marco_hoyer@gmx.de')]
-description = "cfn-sphere - A CLI tool intended to simplify AWS CloudFormation handling."
+authors = [Author('Marco Hoyer', 'marco_hoyer@gmx.de'), Author('Steve Parker', 'steve.parker@kcom.com')]
+description = "cfn-square - A CLI tool intended to simplify AWS CloudFormation handling."
 license = 'APACHE LICENSE, VERSION 2.0'
-summary = 'cfn-sphere AWS CloudFormation management cli'
-url = 'https://github.com/cfn-sphere/cfn-sphere'
-version = '0.1.39'
+summary = 'cfn-square AWS CloudFormation management cli'
+url = 'https://github.com/KCOM-Enterprise/cfn-square'
+version = '0.1.38'
 
 default_task = ['clean', 'analyze', 'package']
 

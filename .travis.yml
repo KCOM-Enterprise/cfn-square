@@ -1,30 +1,30 @@
 sudo: false
 language: python
 python:
-  - '2.7'
-  - '3.3'
-  - '3.4'
-  - '3.5'
-  - "pypy"
+- '2.7'
+- '3.3'
+- '3.4'
+- '3.5'
+- pypy
 before_install:
-  - git fetch --unshallow
+- git fetch --unshallow
 install:
-  - pip install pip pybuilder coveralls --upgrade
-  - pyb install_dependencies
-script: 
-  - pyb -X run_unit_tests
+- pip install pip pybuilder coveralls --upgrade
+- pyb install_dependencies
+script:
+- pyb -X run_unit_tests
 after_success:
-  - coveralls --verbose
+- coveralls --verbose
 before_deploy:
-  - pyb -X package
+- pyb -X package
 deploy:
   provider: pypi
-  user: marco-hoyer
+  user: steveparker-kcom
   password:
-    secure: a6gMmv6xqZ5lKUzfu/s7A4n1ljKVScVTrugxmGWH0CFEYlc90aO7Q/gXp7TKhEDo4Is408+PXuyPTcRytGuzfAfcYWbmOCJQfwUude0CZPUZWM+uEut5wcav7EUVWPx7TkIQM1yB9pPx4apg+asfGRuoHW1z4kKSrs3VsdSl3ktHAqFUC1H/7Mu+itpwFR+enIAqnsH/CB8SHla4bOu6fWo6p2xOglcmn0OJIMwbW9Qo11BC6NXo7r8z2AFIKzEvFViP57j9nTxzo/GawFM3n1H4l1uKVxPlBPXrduyhYy1yoC3rXmjRlhS3Q5uyjSXhFy7awRCXSjR60Dx8xF1j9cTnW0u7E812lqio4OzVAOweejmJjqpFVsnENBd3okn7RnpHstTF8fQjw8MQ4zZOw3oYUx3orCIvHaAp+bTwBib2XxZ4ihl1nDK6t5QPXtQ3aiww02ddCQEezfU1t5gZQdfCgmbY+xvwWu42riWOLyF9bnT++tlwd/f2JxkLlR9oi8pbPzLr9nohkCCNqTSv1vYiYi+OGW+Euz3Fdzjz4deV9hRMiU9shNsIgUpksv5mKJ81EP+iebkonXh5NsFNk2ZgxtrE6pihA+7yULhnhRc0VwHKFYR1u5VSD0pe9eD8Sl/wIwPUfb/JUrLJC/FOgFo5nDYdNZljz359n+yhreg=
-  distributions: 'sdist'
+    secure: t94MDd1rLDAL6hk9FJO3VUmP5j9TWIlIsl/ShU6sqx26Mf9CS+w4sKaHvQUaC6GnyiyOmYoWP1mVfLbX+UI0X3QWoI+aarc7nT/9hhrkbWDcx8NMf1l9WPJrtey4pdt8bX4eiaxEuibk4Q8aCLVcERIWLZnf11TQKbka2eevCjBce2Vazay1fPGgXoC6jfpJMi118FpkylXQ0Tk32eUvY5fT479hqVDaFZ7h2wCNI9wM8j9EBFROiiu5BcNGgYVzZmCX2QGVtaA5vw7UhScgtsMe6WnTR/uuoM4iBJ6EawaBfq7+ZPI1UHEUwvghpqHGFZqcPHLX9PNCtNRGz/t3wasxokzw9wXtvL5+aDrCc9fC/XbFFTCPtJh4vQRGQAh+IJdXZhAf0QqAkXkHVEDBD8lNOi7jw+dPJPb/7dip8rFaQZMie3uDIBRrhNq8bjhsu2ibOdriyH7hVnz6Mg11ZLUNATBuLlOgkB16/fDt9YmBPmnpryOLCg+CBku7Z/dT6kTofTEBnHgUYXHDPynJiRnKN8xGsuSz++5r/ztGwyU5bzocvl/dkhiulTnWaFEqxtyLPRReCXtS/tDWWggNBUmamwj0xzJah63XOiVwzbZXvwkrTpjV3waPghN7tcHBhWl4GugrHxNV+XafwwtgMlM1i1gCyhMHHWc2x1UN9NQ=
+  distributions: sdist
   skip_cleanup: true
   on:
-    repo: cfn-sphere/cfn-sphere
-    branch: stable
+    repo: KCOM-Enterprise/cfn-square
+    branch: master
     python: '3.5'
