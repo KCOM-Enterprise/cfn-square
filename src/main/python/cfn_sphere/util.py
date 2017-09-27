@@ -1,4 +1,3 @@
-# Modifications copyright (C) 2017 KCOM
 import json
 import logging
 import os
@@ -65,14 +64,6 @@ def get_pretty_parameters_string(stack):
 
     return table.get_string(sortby="Parameter")
 
-def get_pretty_changeset_string(change_set):
-    table = PrettyTable(["Action", "Logical ID", "PhysicalID", "ResourceType", "Replacement"])
-    for change in change_set:
-        detail = change['ResourceChange']
-        table.add_row([detail['Action'], detail['LogicalResourceId'], 
-            detail.get("PhysicalResourceId", ""), detail['ResourceType'], detail.get("Replacement", "")])
-
-    return table.get_string(sortby="PhysicalID")
 
 def get_pretty_stack_outputs(stack_outputs):
     table = PrettyTable(["Output", "Value"])
