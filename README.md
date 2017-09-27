@@ -1,7 +1,9 @@
-# cfn-square
-A CLI tool intended to simplify AWS CloudFormation handling. Derived from cfn-sphere.
+# cfn-sphere
+A CLI tool intended to simplify AWS CloudFormation handling.
 
-[![Build Status](https://travis-ci.org/KCOM-Enterprise/cfn-square.svg?branch=master)](https://travis-ci.org/KCOM-Enterprise/cfn-square)
+[![Build Status](https://travis-ci.org/cfn-sphere/cfn-sphere.svg?branch=master)](https://travis-ci.org/cfn-sphere/cfn-sphere)
+
+[![Code Health](https://landscape.io/github/cfn-sphere/cfn-sphere/master/landscape.svg?style=flat)](https://landscape.io/github/cfn-sphere/cfn-sphere/master)
 
 ## Features
 - cfn templates in yml or json
@@ -21,7 +23,7 @@ A CLI tool intended to simplify AWS CloudFormation handling. Derived from cfn-sp
 
 ### As python artifact:
 
-    pip install cfn-square
+    pip install cfn-sphere
 
 ## Usage
 
@@ -89,8 +91,8 @@ Requirements:
 
 Execute:
 
-    git clone git@github.com:KCOM-Enterprise/cfn-square.git
-    cd cfn-square
+    git clone https://github.com/cfn-sphere/cfn-sphere.git
+    cd cfn-sphere
     virtualenv .venv --python=python2.7
     source .venv/bin/activate
     pip install pybuilder
@@ -105,7 +107,6 @@ Execute:
 ## License
 
 Copyright 2015,2016 Marco Hoyer
-Copyright 2017 KCOM
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License. You may obtain a copy of the
