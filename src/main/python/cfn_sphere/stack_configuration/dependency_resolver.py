@@ -75,6 +75,7 @@ class DependencyResolver(object):
         graph = cls.create_stacks_directed_graph(desired_stacks)
         try:
             order = networkx.topological_sort_recursive(graph)
+            return cls.filter_unmanaged_stacks(desired_stacks, order)
         except NetworkXUnfeasible as e:
             cls.analyse_cyclic_dependencies(graph)
             raise InvalidDependencyGraphException("Could not define an order of stacks: {0}".format(e))
