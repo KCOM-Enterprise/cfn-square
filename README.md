@@ -3,7 +3,7 @@ A CLI tool intended to simplify AWS CloudFormation handling. Derived from cfn-sp
 
 [![Build Status](https://travis-ci.org/KCOM-Enterprise/cfn-square.svg?branch=master)](https://travis-ci.org/KCOM-Enterprise/cfn-square)
 
-## Features
+## cfn-sphere Features
 - cfn templates in yml or json
 - build for human interaction and automation (run 'cf sync stacks.yml' triggered by a git push if you dare ;-)
 - a source of truth defining cloudformation stacks with their template and parameters
@@ -14,8 +14,22 @@ A CLI tool intended to simplify AWS CloudFormation handling. Derived from cfn-sp
 - allow stack parameter values updates in command line interface 
 - encrypt/decrypt values with AWS KMS (https://aws.amazon.com/de/kms/)
 
-## Documentation
+## cfn-square Additional Features
+
+- Support for creating and executing cloudformation change sets
+
+## cfn-sphere Documentation
+
+For original cfn-sphere features read:
+
 **https://github.com/cfn-sphere/cfn-sphere/wiki**
+
+## cfn-square Documentation
+
+For cfn-square specific features read:
+
+**https://github.com/KCOM-Enterprise/cfn-square/wiki**
+
 
 ## Install
 
