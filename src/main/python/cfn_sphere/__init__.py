@@ -71,9 +71,9 @@ class StackActionHandler(object):
                                         failure_action=stack_config.failure_action)
 
             if stack_name in existing_stacks:
-                self.cfn.create_change_set(stack)
+                self.cfn.create_change_set(stack, 'UPDATE')
             else:
-                raise CfnStackActionFailedException("Could not create change set for {0}: Does not exist".format(stack.name))
+                self.cfn.create_change_set(stack, 'CREATE')
                         
 
     def create_or_update_stacks(self):

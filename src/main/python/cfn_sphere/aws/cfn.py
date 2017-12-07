@@ -363,30 +363,46 @@ class CloudFormation(object):
         
         if resp['Status'] == "FAILED":
             print("Changeset failed with reason:", resp["StatusReason"])
-        else:
-            changset_string = get_pretty_changeset_string(resp['Changes'])
-            self.logger.info(
-                "Stack changeset with changes:\n{}".format(changset_string))
-            print(change_set['Id'])
+
+            return False
+
+        changset_string = get_pretty_changeset_string(resp['Changes'])
+        self.logger.info(
+            "Stack changeset with changes:\n{}".format(changset_string))
+
+        print(change_set['Id'])
+
+        return True
 
     @with_boto_retry()
-    def _create_stack_change_set(self, stack):
+    def _create_stack_change_set(self, stack, change_set_type):
+        stack_name = stack.name
+
+        if change_set_type == 'UPDATE':
+            stack_name = self.get_stack_description(stack.name)['StackId']
+
         kwargs = {
-            "StackName": self.get_stack_description(stack.name)['StackId'],
+            "StackName": stack_name,
             "TemplateBody": stack.template.get_template_json(),
             "Parameters": stack.get_parameters_list(),
             "Capabilities": [
                 'CAPABILITY_IAM',
                 'CAPABILITY_NAMED_IAM'
             ],
-            "ChangeSetName": stack.name + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+            "ChangeSetName": stack.name + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5)),
+            "ChangeSetType": change_set_type
         }
 
         if stack.service_role:
             kwargs["RoleARN"] = stack.service_role
 
+
         resp = self.client.create_change_set(**kwargs)
-        self._describe_stack_change_set(resp)
+
+        if not self._describe_stack_change_set(resp):
+            self.logger.info("Removing failed changeset {}".format(resp['Id']))
+            self.client.delete_change_set(ChangeSetName=resp['Id'])
+
 
     @with_boto_retry()
     def _delete_stack(self, stack):
@@ -403,7 +419,7 @@ class CloudFormation(object):
 
         self.client.delete_stack(**kwargs)
 
-    def create_change_set(self, stack):
+    def create_change_set(self, stack, change_set_type):
         self.logger.debug("Creating stack changeset: {}".format(stack))
         assert isinstance(stack, CloudFormationStack)
 
@@ -414,7 +430,7 @@ class CloudFormation(object):
                 "Creating stack changeset {0} ({1}) with parameters:\n{2}".format(stack.name,
                                                                                   stack.template.name,
                                                                                   stack_parameters_string))
-            self._create_stack_change_set(stack)
+            self._create_stack_change_set(stack, change_set_type)
         except (BotoCoreError, ClientError, CfnSphereBotoError) as e:
             raise CfnStackActionFailedException("Could not create change set {0}: {1}".format(stack.name, e))
 
