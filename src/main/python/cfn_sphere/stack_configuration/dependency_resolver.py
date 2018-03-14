@@ -2,7 +2,7 @@ import networkx
 from networkx.exception import NetworkXUnfeasible, NetworkXNoCycle
 
 from cfn_sphere.exceptions import CfnSphereException, InvalidDependencyGraphException, CyclicDependencyException
-
+from cfn_sphere.transform import TransformList
 
 class DependencyResolver(object):
     @staticmethod
@@ -46,7 +46,7 @@ class DependencyResolver(object):
         for name, data in desired_stacks.items():
             if data:
                 for _, value in data.parameters.items():
-                    if isinstance(value, list):
+                    if isinstance(value, (list, TransformList)):
                         for item in value:
                             if cls.is_parameter_reference(item):
                                 dependant_stack, _ = cls.parse_stack_reference_value(item)

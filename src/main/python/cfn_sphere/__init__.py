@@ -13,10 +13,10 @@ __version__ = '${version}'
 
 
 class StackActionHandler(object):
-    def __init__(self, config):
+    def __init__(self, config, dry_run=False):
         self.logger = get_logger(root=True)
         self.config = config
-        self.cfn = CloudFormation(region=self.config.region)
+        self.cfn = CloudFormation(region=self.config.region, dry_run=dry_run)
         self.parameter_resolver = ParameterResolver(region=self.config.region)
         self.cli_parameters = config.cli_params
 

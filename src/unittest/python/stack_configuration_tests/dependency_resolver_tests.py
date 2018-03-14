@@ -58,6 +58,8 @@ class DependencyResolverTests(TestCase):
                                                      'includeGlobalServices': False}})
                   }
 
+        print(stacks)
+
         expected = ['vpc', 'default-sg', 'app1', 'app2']
 
         self.assertEqual(expected, DependencyResolver.get_stack_order(stacks))
