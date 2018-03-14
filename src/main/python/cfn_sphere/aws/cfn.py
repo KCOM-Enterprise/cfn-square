@@ -41,10 +41,11 @@ class CloudFormationStack(object):
 
 class CloudFormation(object):
     @with_boto_retry()
-    def __init__(self, region="eu-west-1"):
+    def __init__(self, region="eu-west-1", dry_run=False):
         self.logger = get_logger()
         self.client = boto3.client('cloudformation', region_name=region)
         self.resource = boto3.resource('cloudformation', region_name=region)
+        self.dry_run = dry_run
 
     def get_stack(self, stack_name):
         """
@@ -451,6 +452,7 @@ class CloudFormation(object):
 
     def create_stack(self, stack):
         self.logger.debug("Creating stack: {0}".format(stack))
+
         assert isinstance(stack, CloudFormationStack)
 
         try:
@@ -460,6 +462,12 @@ class CloudFormation(object):
                 "Creating stack {0} ({1}) with parameters:\n{2}".format(stack.name,
                                                                         stack.template.name,
                                                                         stack_parameters_string))
+            
+            if self.dry_run:
+                self.logger.info('Dry run. Exiting.')
+                
+                return
+
             self._create_stack(stack)
 
             self.wait_for_stack_action_to_complete(stack.name, "create", stack.timeout)
@@ -474,12 +482,23 @@ class CloudFormation(object):
 
     def update_stack(self, stack):
         self.logger.debug("Updating stack: {0}".format(stack))
+
         assert isinstance(stack, CloudFormationStack)
 
         try:
             stack_parameters_string = get_pretty_parameters_string(stack)
 
             try:
+                self.logger.info(
+                    "Updating stack {0} ({1}) with parameters:\n{2}".format(stack.name,
+                                                                            stack.template.name,
+                                                                            stack_parameters_string))
+
+                if self.dry_run:
+                    self.logger.info('Dry run. Exiting.')
+                    
+                    return
+
                 self._update_stack(stack)
             except ClientError as e:
 
@@ -492,11 +511,6 @@ class CloudFormation(object):
                                                                                 stack.template.name,
                                                                                 stack_parameters_string))
                     raise
-
-            self.logger.info(
-                "Updating stack {0} ({1}) with parameters:\n{2}".format(stack.name,
-                                                                        stack.template.name,
-                                                                        stack_parameters_string))
 
             self.wait_for_stack_action_to_complete(stack.name, "update", stack.timeout)
 

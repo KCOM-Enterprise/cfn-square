@@ -52,12 +52,16 @@ def cli():
 @click.argument('config', type=click.Path(exists=True))
 @click.option('--parameter', '-p', default=None, envvar='CFN_SPHERE_PARAMETERS', type=click.STRING, multiple=True,
               help="Stack parameter to overwrite, eg: --parameter stack1.p1=v1")
+@click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
+              help="transform context yaml")
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def create_change_set(config, parameter, debug, confirm, yes):
+@click.option('--dry_run', '-n', is_flag=True, default=False, envvar='CFN_SPHERE_DRY_RUN',
+              help="Dry run.")
+def create_change_set(config, parameter, debug, confirm, yes, context, dry_run):
     confirm = confirm or yes
     if debug:
         LOGGER.setLevel(logging.DEBUG)
@@ -72,8 +76,8 @@ def create_change_set(config, parameter, debug, confirm, yes):
             get_first_account_alias_or_account_id()), abort=True)
 
     try:
-        config = Config(config_file=config, cli_params=parameter)
-        StackActionHandler(config).create_change_set()
+        config = Config(config_file=config, cli_params=parameter, transform_context=context)
+        StackActionHandler(config, dry_run).create_change_set()
     except CfnSphereException as e:
         LOGGER.error(e)
         if debug:
@@ -127,13 +131,18 @@ def execute_change_set(change_set, debug, confirm, yes, region):
 @click.argument('config', type=click.Path(exists=True))
 @click.option('--parameter', '-p', default=None, envvar='CFN_SPHERE_PARAMETERS', type=click.STRING, multiple=True,
               help="Stack parameter to overwrite, eg: --parameter stack1.p1=v1")
+@click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
+              help="transform context yaml")
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def sync(config, parameter, debug, confirm, yes):
-    confirm = confirm or yes
+@click.option('--dry_run', '-n', is_flag=True, default=False, envvar='CFN_SPHERE_DRY_RUN',
+              help="Dry run.")
+def sync(config, parameter, debug, confirm, yes, context, dry_run):
+    confirm = confirm or yes or dry_run
+
     if debug:
         LOGGER.setLevel(logging.DEBUG)
         boto3.set_stream_logger(name='boto3', level=logging.DEBUG)
@@ -148,8 +157,8 @@ def sync(config, parameter, debug, confirm, yes):
 
     try:
 
-        config = Config(config_file=config, cli_params=parameter)
-        StackActionHandler(config).create_or_update_stacks()
+        config = Config(config_file=config, cli_params=parameter, transform_context=context)
+        StackActionHandler(config, dry_run).create_or_update_stacks()
     except CfnSphereException as e:
         LOGGER.error(e)
         if debug:

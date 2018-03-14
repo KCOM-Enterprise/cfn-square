@@ -8,18 +8,31 @@ from yaml.scanner import ScannerError
 from cfn_sphere.exceptions import InvalidConfigException, CfnSphereException
 from cfn_sphere.util import get_logger
 
+from cfn_sphere.transform import TransformDict, merge_includes
+
 ALLOWED_CONFIG_KEYS = ["region", "stacks", "service-role", "stack-policy-url", "timeout", "tags", "on_failure",
                        "disable_rollback", "change_set"]
 
 
 class Config(object):
-    def __init__(self, config_file=None, config_dict=None, cli_params=None):
+    def __init__(self, config_file=None, config_dict=None, cli_params=None, transform_context=None):
         self.logger = get_logger()
+
+        import_path = None
+
+        if transform_context:
+            import_path = os.path.dirname(transform_context)
+
+            with open(transform_context, 'r') as stream:
+                transform_context = yaml.load(stream)
+        else:
+            transform_context = {}
+
 
         if isinstance(config_dict, dict):
             self.working_dir = None
         elif config_file:
-            config_dict = self._read_config_file(config_file)
+            config_dict = self._read_config_file(config_file, transform_context, import_path)
             self.working_dir = os.path.dirname(os.path.realpath(config_file))
         else:
             raise InvalidConfigException("No config_file or valid config_dict provided")
@@ -35,7 +48,7 @@ class Config(object):
         self.default_failure_action = config_dict.get("on_failure", "ROLLBACK")
         self.default_disable_rollback = config_dict.get("disable_rollback", False)
 
-        self.stacks = self._parse_stack_configs(config_dict)
+        self.stacks = self._parse_stack_configs(config_dict, transform_context)
         self._config_dict = config_dict
 
         self._validate()
@@ -52,7 +65,7 @@ class Config(object):
             # stacks config file not required when executing a change set
             if self.change_set is None:
                 assert self.stacks, "Please specify stacks in config file"
-                assert isinstance(self.stacks, dict), "stacks must be of type dict, not {0}".format(type(self.stacks))
+                assert isinstance(self.stacks, TransformDict), "stacks must be of type dict, not {0}".format(type(self.stacks))
 
             for cli_stack in self.cli_params.keys():
                 assert cli_stack in self.stacks.keys(), "Stack '{0}' does not exist in config".format(cli_stack)
@@ -79,13 +92,13 @@ class Config(object):
     def __ne__(self, other):
         return not self == other
 
-    def _parse_stack_configs(self, config_dict):
+    def _parse_stack_configs(self, config_dict, transform_context):
         """
         Create a StackConfig Object for each stack defined in config
         :param config_dict: dict
         :return: dict(stack_name: StackConfig)
         """
-        stacks_dict = {}
+        stacks_dict = TransformDict({}, transform_context)
         for key, value in config_dict.get("stacks", {}).items():
             try:
                 stacks_dict[key] = StackConfig(value,
@@ -125,11 +138,13 @@ class Config(object):
         return param_dict
 
     @staticmethod
-    def _read_config_file(config_file):
+    def _read_config_file(config_file, transform_context, path):
         try:
             with open(config_file, "r") as f:
-                config_dict = yaml.safe_load(f.read())
-                if not isinstance(config_dict, dict):
+                context = merge_includes(transform_context, path)
+                config_dict = TransformDict(yaml.safe_load(f.read()), context)
+                
+                if not isinstance(config_dict, TransformDict):
                     raise InvalidConfigException(
                         "Config file {0} has invalid content, top level element must be a dict".format(config_file))
 
@@ -147,7 +162,11 @@ class StackConfig(object):
                  default_service_role=None, default_stack_policy_url=None, default_failure_action="ROLLBACK",
                  default_disable_rollback=False):
 
-        if not stack_config_dict or not isinstance(stack_config_dict, dict):
+        # unit testing constructs this directly which means we have to wrap it here.
+        if not isinstance(stack_config_dict, TransformDict):
+            stack_config_dict = TransformDict(stack_config_dict, {})
+
+        if not stack_config_dict:
             raise InvalidConfigException("Stack configuration must not be empty")
 
         if default_tags is None:
