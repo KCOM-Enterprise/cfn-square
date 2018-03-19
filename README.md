@@ -73,7 +73,32 @@ Create a YAML file containing a region and some stacks in a stacks.yml file f.e.
                 vpcID: "|ref|test-vpc.id"
 
 ### 2. Write your CloudFormation templates
-Write your templates and configure them in your stacks.yml
+Write your templates and configure them in your stacks.yml. Optionally you can define 
+placeholders in your stack config using the [to-be-replaced] notation and supply a
+'transforms context' file. Example:
+
+stack.yaml:
+    region: eu-west-1
+    stacks:
+        test-vpc:
+            template-url: vpc.yml
+            name: vpc[environment]
+        test-stack:
+            template-url: app.yml
+            parameters:
+                vpcID: "|ref|test-vpc.id"
+
+context (development environment):
+dev.yaml
+    environemnt: dev
+
+staging.yaml:
+    environment: staging
+
+production.yaml:
+    environment: production
+
+This way your stacks.yaml remains the same for all the environments.
 
 ### 3. Sync it
 A simple command synchronizes your definition with reality!
@@ -97,7 +122,7 @@ Cfn-Sphere supports native cloudformation templates written in JSON or YAML, loc
 
 Requirements:
 
-* python >= 2.6
+* python >= 3
 * virtualenv
 * pybuilder
 
@@ -105,7 +130,7 @@ Execute:
 
     git clone git@github.com:KCOM-Enterprise/cfn-square.git
     cd cfn-square
-    virtualenv .venv --python=python2.7
+    virtualenv .venv --python=python3
     source .venv/bin/activate
     pip install pybuilder
     pyb install_dependencies

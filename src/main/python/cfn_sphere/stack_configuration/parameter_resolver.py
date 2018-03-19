@@ -10,7 +10,7 @@ from cfn_sphere.aws.kms import KMS
 from cfn_sphere.exceptions import CfnSphereException
 from cfn_sphere.stack_configuration.dependency_resolver import DependencyResolver
 from cfn_sphere.util import get_logger
-
+from cfn_sphere.transform import TransformList
 
 class ParameterResolver(object):
     """
@@ -90,7 +90,7 @@ class ParameterResolver(object):
 
         for key, value in stack_config.parameters.items():
 
-            if isinstance(value, list):
+            if isinstance(value, (list, TransformList)):
                 self.logger.debug("List parameter found for {0}".format(key))
                 for i, item in enumerate(value):
                     if DependencyResolver.is_parameter_reference(item):
