@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from pybuilder.core import use_plugin, init, Author
 
@@ -19,7 +19,7 @@ description = "cfn-square - A CLI tool intended to simplify AWS CloudFormation h
 license = 'APACHE LICENSE, VERSION 2.0'
 summary = 'cfn-square AWS CloudFormation management cli'
 url = 'https://github.com/KCOM-Enterprise/cfn-square'
-version = '0.2.00'
+version = '0.2.01'
 
 default_task = ['clean', 'analyze', 'package']
 
