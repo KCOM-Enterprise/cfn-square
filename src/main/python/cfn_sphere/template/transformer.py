@@ -174,8 +174,8 @@ class CloudFormationTemplateTransformer(object):
             if key.lower().strip() == '|include|':
                 if not isinstance(value, string_types):
                     raise TemplateErrorException("Value of '|include|' must be of type string")
-                if not value.lower().startswith("s3://"):
-                    raise TemplateErrorException("Value of '|include|' must start with s3://")
+                if not value.lower().startswith(("s3://", "https://")):
+                    raise TemplateErrorException("Value of '|include|' must start with s3:// or https://")
 
                 return "Fn::Transform", {"Name": "AWS::Include",
                                          "Location": value}

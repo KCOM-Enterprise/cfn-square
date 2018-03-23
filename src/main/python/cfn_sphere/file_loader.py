@@ -8,6 +8,10 @@ from cfn_sphere.aws.s3 import S3
 from cfn_sphere.exceptions import TemplateErrorException, CfnSphereException
 from cfn_sphere.template import CloudFormationTemplate
 
+import urllib.request
+# BeautifulSoup4 used to elegantly handle non-conformant HTML
+from bs4 import BeautifulSoup
+
 
 class FileLoader(object):
     @classmethod
@@ -75,7 +79,13 @@ class FileLoader(object):
             if url.lower().endswith(".json"):
                 return json.loads(file_content)
             elif url.lower().endswith(".template"):
-                return json.loads(file_content)
+                # try to load json 
+                try:
+                    return json.loads(file_content)
+                except Exception as e:
+                    # try to load yaml
+                    yaml.add_multi_constructor(u"", cls.handle_yaml_constructors)
+                    return yaml.load(file_content)            
             elif url.lower().endswith(".yml") or url.lower().endswith(".yaml"):
                 yaml.add_multi_constructor(u"", cls.handle_yaml_constructors)
                 return yaml.load(file_content)
@@ -94,6 +104,8 @@ class FileLoader(object):
         """
         if url.lower().startswith("s3://"):
             return cls._s3_get_file(url)
+        elif url.lower().startswith("https://"):
+            return cls._https_get_file(url)
         else:
             return cls._fs_get_file(url, working_dir)
 
@@ -122,5 +134,18 @@ class FileLoader(object):
         """
         try:
             return S3().get_contents_from_url(url)
+        except Exception as e:
+            raise CfnSphereException("Could not load file from {0}: {1}".format(url, e))
+
+    @staticmethod
+    def _https_get_file(url):
+        """
+        Load file from https
+        :param url: str
+        :return: str(utf-8)
+        """
+        try:
+            with urllib.request.urlopen(url) as response:
+                return BeautifulSoup(response.read(), 'html.parser').prettify()
         except Exception as e:
             raise CfnSphereException("Could not load file from {0}: {1}".format(url, e))
