@@ -166,8 +166,9 @@ def sync(config, parameter, debug, session, confirm, yes, context, dry_run):
         config = Config(config_file=config, cli_params=parameter, transform_context=context)
         StackActionHandler(config, dry_run).create_or_update_stacks(cached_stack_data)
 
-        with open(session, 'w') as outfile:
-            json.dump(cached_stack_data, outfile)
+        if session:
+            with open(session, 'w') as outfile:
+                json.dump(cached_stack_data, outfile)
 
     except CfnSphereException as e:
         LOGGER.error(e)
