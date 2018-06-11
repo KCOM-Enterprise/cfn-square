@@ -76,7 +76,7 @@ class StackActionHandler(object):
                 self.cfn.create_change_set(stack, 'CREATE')
                         
 
-    def create_or_update_stacks(self):
+    def create_or_update_stacks(self, cached_stack_data):
         existing_stacks = self.cfn.get_stack_names()
         desired_stacks = self.config.stacks
         stack_processing_order = DependencyResolver().get_stack_order(desired_stacks)
@@ -95,7 +95,7 @@ class StackActionHandler(object):
                 stack_policy = None
 
             template = TemplateHandler.get_template(stack_config.template_url, stack_config.working_dir)
-            parameters = self.parameter_resolver.resolve_parameter_values(stack_name, stack_config, self.cli_parameters)
+            parameters = self.parameter_resolver.resolve_parameter_values(stack_name, stack_config, cached_stack_data, self.cli_parameters)
 
             stack = CloudFormationStack(template=template,
                                         parameters=parameters,

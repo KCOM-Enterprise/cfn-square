@@ -96,7 +96,7 @@ class CloudFormation(object):
             raise CfnSphereBotoError(e)
 
     @timed
-    @with_boto_retry()
+    @with_boto_retry(max_retries=10)
     def get_stack_descriptions(self):
         """
         Get all stacks stack descriptions

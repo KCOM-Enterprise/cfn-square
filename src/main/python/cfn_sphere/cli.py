@@ -3,6 +3,7 @@ import logging
 import sys
 import boto3
 import click
+import json
 from botocore.exceptions import ClientError, BotoCoreError
 
 from cfn_sphere import StackActionHandler
@@ -134,13 +135,14 @@ def execute_change_set(change_set, debug, confirm, yes, region):
 @click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
               help="transform context yaml")
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
+@click.option('--session', '-s', help="A session id for caching stack data between syncs")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
 @click.option('--dry_run', '-n', is_flag=True, default=False, envvar='CFN_SPHERE_DRY_RUN',
               help="Dry run.")
-def sync(config, parameter, debug, confirm, yes, context, dry_run):
+def sync(config, parameter, debug, session, confirm, yes, context, dry_run):
     confirm = confirm or yes or dry_run
 
     if debug:
@@ -156,9 +158,17 @@ def sync(config, parameter, debug, confirm, yes, context, dry_run):
             get_first_account_alias_or_account_id()), abort=True)
 
     try:
+        cached_stack_data = {}
+        if session:
+            with open(session) as session_data:
+                cached_stack_data = json.load(session_data)
 
         config = Config(config_file=config, cli_params=parameter, transform_context=context)
-        StackActionHandler(config, dry_run).create_or_update_stacks()
+        StackActionHandler(config, dry_run).create_or_update_stacks(cached_stack_data)
+
+        with open(session, 'w') as outfile:
+            json.dump(cached_stack_data, outfile)
+
     except CfnSphereException as e:
         LOGGER.error(e)
         if debug:

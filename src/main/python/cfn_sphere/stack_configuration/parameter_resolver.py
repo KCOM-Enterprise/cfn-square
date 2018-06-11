@@ -35,7 +35,7 @@ class ParameterResolver(object):
             value_string += str(item)
         return value_string
 
-    def get_output_value(self, stack_outputs, stack, output_key):
+    def get_output_value(self, cached_stack_data, stack, output_key):
         """
         Get value for a specific output key in format <stack-name>.<output>.
         :param output_key: str <stack-name>.<output>
@@ -44,7 +44,12 @@ class ParameterResolver(object):
         self.logger.debug("Looking up output {0} from stack {1}".format(output_key, stack))
 
         try:
-            artifact = stack_outputs[stack][output_key]
+
+            if stack not in cached_stack_data:
+                # load the stack into the cache
+                cached_stack_data[stack] = self.cfn.get_stack_outputs(stack)
+
+            artifact = cached_stack_data[stack][output_key]
             return artifact
         except KeyError:
             raise CfnSphereException("Could not get a valid value for {0}.".format(output_key))
@@ -84,9 +89,8 @@ class ParameterResolver(object):
         except Exception as e:
             raise CfnSphereException("Could not get latest value for {0}: {1}".format(key, e))
 
-    def resolve_parameter_values(self, stack_name, stack_config, cli_parameters=None):
+    def resolve_parameter_values(self, stack_name, stack_config, cached_stack_data, cli_parameters=None):
         resolved_parameters = {}
-        stack_outputs = self.cfn.get_stacks_outputs()
 
         for key, value in stack_config.parameters.items():
 
@@ -95,7 +99,7 @@ class ParameterResolver(object):
                 for i, item in enumerate(value):
                     if DependencyResolver.is_parameter_reference(item):
                         referenced_stack, output_name = DependencyResolver.parse_stack_reference_value(item)
-                        value[i] = str(self.get_output_value(stack_outputs, referenced_stack, output_name))
+                        value[i] = str(self.get_output_value(cached_stack_data, referenced_stack, output_name))
 
                 value_string = self.convert_list_to_string(value)
                 resolved_parameters[key] = value_string
@@ -104,7 +108,7 @@ class ParameterResolver(object):
 
                 if DependencyResolver.is_parameter_reference(value):
                     referenced_stack, output_name = DependencyResolver.parse_stack_reference_value(value)
-                    resolved_parameters[key] = str(self.get_output_value(stack_outputs, referenced_stack, output_name))
+                    resolved_parameters[key] = str(self.get_output_value(cached_stack_data, referenced_stack, output_name))
 
                 elif self.is_keep_value(value):
                     resolved_parameters[key] = str(self.get_latest_value(key, value, stack_name))
