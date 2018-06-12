@@ -51,9 +51,11 @@ class ParameterResolverTests(TestCase):
         stack_config = Mock()
         stack_config.parameters = {'foo': '|Ref|stack.output'}
 
-        result = ParameterResolver().resolve_parameter_values('foo', stack_config)
+        cached = {}
 
-        get_output_value_mock.assert_called_with(None, "stack", "output")
+        result = ParameterResolver().resolve_parameter_values('foo', stack_config, cached)
+
+        get_output_value_mock.assert_called_with(cached, "stack", "output")
         self.assertEqual({'foo': 'bar'}, result)
 
     @patch('cfn_sphere.stack_configuration.parameter_resolver.ParameterResolver.get_output_value')
@@ -65,9 +67,11 @@ class ParameterResolverTests(TestCase):
         stack_config = Mock()
         stack_config.parameters = {'foo': ['|Ref|stack.output', '|Ref|stack.output']}
 
-        result = ParameterResolver().resolve_parameter_values('foo', stack_config)
+        cached = {}
 
-        get_output_value_mock.assert_called_with(None, "stack", "output")
+        result = ParameterResolver().resolve_parameter_values('foo', stack_config, cached)
+
+        get_output_value_mock.assert_called_with(cached, "stack", "output")
         self.assertEqual({'foo': 'bar,bar'}, result)
 
     def test_resolve_parameter_values_raises_exception_on_none_value(self):
@@ -189,7 +193,7 @@ class ParameterResolverTests(TestCase):
         stack_config = Mock()
         stack_config.parameters = {'foo': "bar"}
 
-        result = ParameterResolver().resolve_parameter_values("stack1", stack_config, cli_parameters)
+        result = ParameterResolver().resolve_parameter_values("stack1", stack_config, {}, cli_parameters)
 
         self.assertEqual({'foo': 'foobar'}, result)
 

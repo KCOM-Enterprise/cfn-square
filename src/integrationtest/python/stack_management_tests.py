@@ -61,14 +61,16 @@ class CfnSphereIntegrationTest(object):
 
     def sync_stacks(self):
         stack_handler = StackActionHandler(self.config)
+        cached = {}
         self.logger.info("Syncing stacks")
-        stack_handler.create_or_update_stacks()
+        stack_handler.create_or_update_stacks(cached)
 
     def sync_stacks_with_parameters_overwrite(self, cli_params):
         config = Config(config_file=os.path.join(self.test_resources_dir, "stacks.yml"), cli_params=cli_params)
         stack_handler = StackActionHandler(config)
+        cached = {}
         self.logger.info("Syncing stacks")
-        stack_handler.create_or_update_stacks()
+        stack_handler.create_or_update_stacks(cached)
 
     def delete_stacks(self):
         StackActionHandler(self.config).delete_stacks()
