@@ -189,7 +189,7 @@ class ParameterResolverTests(TestCase):
         stack_config = Mock()
         stack_config.parameters = {'foo': "bar"}
 
-        result = ParameterResolver().resolve_parameter_values("stack1", stack_config, cli_parameters)
+        result = ParameterResolver().resolve_parameter_values("stack1", stack_config, {}, cli_parameters)
 
         self.assertEqual({'foo': 'foobar'}, result)
 
