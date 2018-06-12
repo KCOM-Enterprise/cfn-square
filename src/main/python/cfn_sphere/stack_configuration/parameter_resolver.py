@@ -89,7 +89,7 @@ class ParameterResolver(object):
         except Exception as e:
             raise CfnSphereException("Could not get latest value for {0}: {1}".format(key, e))
 
-    def resolve_parameter_values(self, stack_name, stack_config, cached_stack_data, cli_parameters=None):
+    def resolve_parameter_values(self, stack_name, stack_config, cached_stack_data={}, cli_parameters=None):
         resolved_parameters = {}
 
         for key, value in stack_config.parameters.items():
