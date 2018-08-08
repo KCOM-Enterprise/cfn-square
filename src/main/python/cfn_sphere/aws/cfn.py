@@ -1,5 +1,5 @@
 # Modifications copyright (C) 2017 KCOM
-mport time
+import time
 import json
 import boto3
 import logging
