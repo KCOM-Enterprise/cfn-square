@@ -14,14 +14,17 @@ class ParameterResolverTests(TestCase):
         self.cloudformation_patcher = patch('cfn_sphere.stack_configuration.parameter_resolver.CloudFormation')
         self.ec2api_patcher = patch('cfn_sphere.stack_configuration.parameter_resolver.Ec2Api')
         self.kms_patcher = patch('cfn_sphere.stack_configuration.parameter_resolver.KMS')
+        self.ssm_patcher = patch('cfn_sphere.stack_configuration.parameter_resolver.SSM')
         self.cfn_mock = self.cloudformation_patcher.start()
         self.ec2api_mock = self.ec2api_patcher.start()
         self.kms_mock = self.kms_patcher.start()
+        self.ssm_mock = self.ssm_patcher.start()
 
     def tearDown(self):
         self.cloudformation_patcher.stop()
         self.ec2api_patcher.stop()
         self.kms_patcher.stop()
+        self.ssm_patcher.stop()
 
     def test_convert_list_to_string_returns_valid_string(self):
         list = ['a', 'b', 'c']
@@ -74,7 +77,7 @@ class ParameterResolverTests(TestCase):
         stack_config = Mock()
         stack_config.parameters = {'foo': None}
 
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(CfnSphereException):
             ParameterResolver().resolve_parameter_values('foo', stack_config)
 
     def test_resolve_parameter_values_returns_list_with_string_value(self):
@@ -156,6 +159,19 @@ class ParameterResolverTests(TestCase):
         result = ParameterResolver.get_default_from_keep_value('|keepOrUse|')
         self.assertEqual('', result)
 
+    def test_handle_ssm_value_raises_exception_on_invalid_value_format(self):
+        with self.assertRaises(CfnSphereException):
+            ParameterResolver().handle_ssm_value('|ssm|/test/|invalid')
+
+    def test_resolve_parameter_values_returns_ssm_value(self):
+        self.ssm_mock.return_value.get_parameter.return_value = "decryptedValue"
+
+        stack_config = Mock()
+        stack_config.parameters = {'foo': '|ssm|/path/to/my/key'}
+
+        result = ParameterResolver().resolve_parameter_values('foo', stack_config)
+        self.assertEqual(result, {'foo': 'decryptedValue'})
+
     def test_resolve_parameter_values_returns_decrypted_value(self):
         self.kms_mock.return_value.decrypt.return_value = "decryptedValue"
 
@@ -164,6 +180,24 @@ class ParameterResolverTests(TestCase):
 
         result = ParameterResolver().resolve_parameter_values('foo', stack_config)
         self.assertEqual(result, {'foo': 'decryptedValue'})
+
+    def test_handle_kms_value_handles_encryption_context_if_set(self):
+        self.kms_mock.return_value.decrypt.return_value = "decryptedValue"
+        result = ParameterResolver().handle_kms_value('|kms|k=v|encryptedValue')
+
+        self.kms_mock.return_value.decrypt.assert_called_once_with('encryptedValue', encryption_context={'k': 'v'})
+        self.assertEqual(result, 'decryptedValue')
+
+    def test_handle_kms_value_ignores_encryption_context_if_not_set(self):
+        self.kms_mock.return_value.decrypt.return_value = "decryptedValue"
+        result = ParameterResolver().handle_kms_value('|kms|encryptedValue')
+
+        self.kms_mock.return_value.decrypt.assert_called_once_with('encryptedValue')
+        self.assertEqual(result, 'decryptedValue')
+
+    def test_handle_kms_value_raises_exception_on_invalid_value_format(self):
+        with self.assertRaises(CfnSphereException):
+            ParameterResolver().handle_kms_value('|kms|k=v|encryptedValue|something')
 
     def test_update_parameters_with_cli_parameters_with_string_param_value(self):
         result = ParameterResolver().update_parameters_with_cli_parameters(

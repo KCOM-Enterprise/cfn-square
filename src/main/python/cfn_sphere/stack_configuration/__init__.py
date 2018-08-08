@@ -1,12 +1,12 @@
 # Modifications copyright (C) 2017 KCOM
 import os
+from six import string_types
 from collections import defaultdict
 
-import yaml
-from yaml.scanner import ScannerError
-
+from cfn_sphere.file_loader import FileLoader
 from cfn_sphere.exceptions import InvalidConfigException, CfnSphereException
 from cfn_sphere.util import get_logger
+from cfn_sphere.stack_configuration.dependency_resolver import DependencyResolver
 
 from cfn_sphere.transform import TransformDict, merge_includes
 
@@ -15,7 +15,7 @@ ALLOWED_CONFIG_KEYS = ["region", "stacks", "service-role", "stack-policy-url", "
 
 
 class Config(object):
-    def __init__(self, config_file=None, config_dict=None, cli_params=None, transform_context=None):
+    def __init__(self, config_file=None, config_dict=None, cli_params=None, , stack_name_suffix=None, transform_context=None):
         self.logger = get_logger()
 
         import_path = None
@@ -30,15 +30,21 @@ class Config(object):
 
 
         if isinstance(config_dict, dict):
-            self.working_dir = None
+            self.stack_config_base_dir = None
         elif config_file:
-            config_dict = self._read_config_file(config_file, transform_context, import_path)
-            self.working_dir = os.path.dirname(os.path.realpath(config_file))
+            self.stack_config_base_dir = os.path.dirname(os.path.realpath(config_file))
+            config_dict = FileLoader.get_yaml_or_json_file(config_file, working_dir=os.getcwd())
         else:
-            raise InvalidConfigException("No config_file or valid config_dict provided")
+            raise InvalidConfigException(
+                "You need to pass either config_file (path to a file) or config_dict (python dict) property")
 
-        self.cli_params = self._parse_cli_parameters(cli_params)
+        self._validate(config_dict)
+
+        cli_parameters = self._parse_cli_parameters(cli_params)
+        self.cli_params = self._apply_stack_name_suffix_to_cli_parameters(cli_parameters, stack_name_suffix)
+
         self.region = config_dict.get("region")
+        self.stack_name_suffix = stack_name_suffix
 
         self.change_set = config_dict.get("change_set")
         self.default_service_role = config_dict.get("service-role")
@@ -47,44 +53,61 @@ class Config(object):
         self.default_tags = config_dict.get("tags", {})
         self.default_failure_action = config_dict.get("on_failure", "ROLLBACK")
         self.default_disable_rollback = config_dict.get("disable_rollback", False)
+        self.default_termination_protection = config_dict.get("termination_protection", False)
 
         self.stacks = self._parse_stack_configs(config_dict, transform_context)
-        self._config_dict = config_dict
+        self.stacks = self._apply_stack_name_suffix_to_stacks(stacks, stack_name_suffix)
 
-        self._validate()
+        self._validate_cli_params(self.cli_params, self.stacks)
 
-    def _validate(self):
+    @staticmethod
+    def _validate(config_dict):
         try:
-            for key in self._config_dict.keys():
+            for key in config_dict.keys():
                 assert str(key).lower() in ALLOWED_CONFIG_KEYS, \
                     "Invalid syntax, {0} is not allowed as top level config key".format(key)
 
-            assert self.region, "Please specify region in config file"
-            assert isinstance(self.region, str), "Region must be of type str, not {0}".format(type(self.region))
+            region = config_dict.get("region")
+            assert region, "Please specify region in config file"
+            assert isinstance(region, string_types), "Region must be a string, not {0}".format(type(region))
 
             # stacks config file not required when executing a change set
             if self.change_set is None:
                 assert self.stacks, "Please specify stacks in config file"
                 assert isinstance(self.stacks, TransformDict), "stacks must be of type dict, not {0}".format(type(self.stacks))
 
-            for cli_stack in self.cli_params.keys():
-                assert cli_stack in self.stacks.keys(), "Stack '{0}' does not exist in config".format(cli_stack)
+            service_role = config_dict.get("service-role")
+            if service_role:
+                assert isinstance(service_role, string_types), "service-role must be of type str, not {0}".format(type(service_role))
+                assert service_role.startswith("arn:aws:iam"), "service role must be an AWS ARN like arn:aws:iam::123456789:role/my-role"
 
         except AssertionError as e:
             raise InvalidConfigException(e)
+
+    @staticmethod
+    def _validate_cli_params(cli_params, stacks):
+        try:
+            for cli_param_stack_name in cli_params.keys():
+                assert cli_param_stack_name in stacks.keys(), \
+                    "Stack '{0}' referenced in cli parameter does not exist in config".format(cli_param_stack_name)
+        except AssertionError as e:
+            raise InvalidConfigException(e)
+
 
     def __eq__(self, other):
         try:
             stacks_equal = self.stacks == other.stacks
 
             if (self.cli_params == other.cli_params
-                and self.region == other.region
-                and self.default_tags == other.default_tags
-                and self.default_service_role == other.default_service_role
-                and self.default_stack_policy_url == other.default_stack_policy_url
-                and self.default_timeout == other.default_timeout
-                and self.default_tags == other.default_tags
-                and stacks_equal):
+                    and self.region == other.region
+                    and self.default_tags == other.default_tags
+                    and self.default_service_role == other.default_service_role
+                    and self.default_stack_policy_url == other.default_stack_policy_url
+                    and self.default_timeout == other.default_timeout
+                    and self.default_tags == other.default_tags
+                    and self.default_disable_rollback == other.default_disable_rollback
+                    and self.default_termination_protection == other.default_termination_protection
+                    and stacks_equal):
                 return True
         except AttributeError:
             return False
@@ -102,18 +125,75 @@ class Config(object):
         for key, value in config_dict.get("stacks", {}).items():
             try:
                 stacks_dict[key] = StackConfig(value,
-                                               working_dir=self.working_dir,
+                                               working_dir=self.stack_config_base_dir,
                                                default_tags=self.default_tags,
                                                default_timeout=self.default_timeout,
                                                default_service_role=self.default_service_role,
                                                default_stack_policy_url=self.default_stack_policy_url,
                                                default_failure_action=self.default_failure_action,
-                                               default_disable_rollback=self.default_disable_rollback)
+                                               default_disable_rollback=self.default_disable_rollback,
+                                               default_termination_protection=self.default_termination_protection)
 
             except InvalidConfigException as e:
                 raise InvalidConfigException("Invalid config for stack {0}: {1}".format(key, e))
 
         return stacks_dict
+
+    @classmethod
+    def _apply_stack_name_suffix_to_cli_parameters(cls, cli_parameters, suffix):
+        if not suffix:
+            return cli_parameters
+
+        result = {}
+        for stack_name, parameter in cli_parameters.items():
+            result[stack_name + suffix] = parameter
+
+        return result
+
+    @classmethod
+    def _apply_stack_name_suffix_to_stacks(cls, stacks, suffix):
+        """
+        Apply a stack name suffix to a given set of stacks
+        :param stacks: dict(stack_name -> stack_config)
+        :param suffix: str
+        :return dict(stack_name -> stack_config)
+        """
+        if not suffix:
+            return stacks
+
+        new_stacks = {}
+        managed_stack_names = stacks.keys()
+
+        for original_stack_name, stack_config in stacks.items():
+            parameters = stack_config.parameters
+
+            for key, value in parameters.items():
+                list_value = []
+                if isinstance(value, list):
+                    for item in value:
+                        list_value.append(cls._transform_value(item, suffix, managed_stack_names))
+
+                    parameters[key] = list_value
+                else:
+                    parameters[key] = cls._transform_value(value, suffix, managed_stack_names)
+
+            new_stack_name = "{0}{1}".format(original_stack_name, suffix)
+            stack_config.parameters = parameters
+
+            new_stacks[new_stack_name] = stack_config
+
+        return new_stacks
+
+    @staticmethod
+    def _transform_value(value, suffix, managed_stack_names):
+        result = value
+
+        if DependencyResolver.is_parameter_reference(value):
+            stack_name, output_name = DependencyResolver.parse_stack_reference_value(value)
+            if stack_name in managed_stack_names:
+                result = "|ref|{0}{1}.{2}".format(stack_name, suffix, output_name)
+
+        return result
 
     @staticmethod
     def _parse_cli_parameters(parameters):
@@ -160,7 +240,7 @@ class StackConfig(object):
 
     def __init__(self, stack_config_dict, working_dir=None, default_tags=None, default_timeout=600,
                  default_service_role=None, default_stack_policy_url=None, default_failure_action="ROLLBACK",
-                 default_disable_rollback=False):
+                 default_disable_rollback=False, default_termination_protection=False):
 
         # unit testing constructs this directly which means we have to wrap it here.
         if not isinstance(stack_config_dict, TransformDict):
@@ -183,6 +263,7 @@ class StackConfig(object):
         self.timeout = stack_config_dict.get("timeout", default_timeout)
         self.failure_action = stack_config_dict.get("on_failure", default_failure_action)
         self.disable_rollback = stack_config_dict.get("disable_rollback", default_disable_rollback)
+        self.termination_protection = stack_config_dict.get("termination_protection", default_termination_protection)
 
         self.working_dir = working_dir
         self._stack_config_dict = stack_config_dict
@@ -196,19 +277,19 @@ class StackConfig(object):
                     "Invalid syntax, {0} is not allowed as stack config key".format(key)
 
             assert self.template_url, "Stack config needs a template-url key"
-            assert isinstance(self.template_url, str), \
+            assert isinstance(self.template_url, string_types), \
                 "template-url must be of type str, not {0}".format(type(self.template_url))
 
             assert isinstance(self.timeout, int), "timeout must be of type dict, not {0}".format(type(self.timeout))
 
             if self.service_role:
-                assert isinstance(self.service_role, str), \
+                assert isinstance(self.service_role, string_types), \
                     "service-role must be of type str, not {0}".format(type(self.template_url))
                 assert str(self.service_role).lower().startswith("arn:aws:iam:"), \
                     "service-role must start with 'arn:aws:iam:'"
 
             if self.stack_policy_url:
-                assert isinstance(self.stack_policy_url, str), \
+                assert isinstance(self.stack_policy_url, string_types), \
                     "stack-policy-url must be of type str, not {0}".format(type(self.stack_policy_url))
 
             if self.timeout:
@@ -228,13 +309,13 @@ class StackConfig(object):
     def __eq__(self, other):
         try:
             if (self.parameters == other.parameters
-                and self.tags == other.tags
-                and self.timeout == other.timeout
-                and self.working_dir == other.working_dir
-                and self.service_role == other.service_role
-                and self.stack_policy_url == other.stack_policy_url
-                and self.template_url == other.template_url
-                and self.failure_action == other.failure_action):
+                    and self.tags == other.tags
+                    and self.timeout == other.timeout
+                    and self.working_dir == other.working_dir
+                    and self.service_role == other.service_role
+                    and self.stack_policy_url == other.stack_policy_url
+                    and self.template_url == other.template_url
+                    and self.failure_action == other.failure_action):
                 return True
         except AttributeError:
             return False

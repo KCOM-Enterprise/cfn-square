@@ -1,4 +1,5 @@
 from cfn_sphere.cli import get_first_account_alias_or_account_id
+from cfn_sphere.exceptions import CfnSphereException
 
 try:
     from unittest2 import TestCase

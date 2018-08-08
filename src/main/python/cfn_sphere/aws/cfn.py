@@ -1,11 +1,15 @@
 # Modifications copyright (C) 2017 KCOM
-from datetime import timedelta
-
+mport time
+import json
 import boto3
+import logging
+from datetime import timedelta, datetime
 from botocore.exceptions import BotoCoreError, ClientError, ValidationError
 
 from cfn_sphere.exceptions import CfnStackActionFailedException
-from cfn_sphere.util import *
+from cfn_sphere.util import with_boto_retry, get_logger, timed, get_pretty_stack_outputs, \
+    get_pretty_parameters_string, get_cfn_api_server_time
+from cfn_sphere.exceptions import CfnSphereBotoError
 
 import pprint
 import random
@@ -17,7 +21,7 @@ logging.getLogger('boto').setLevel(logging.FATAL)
 
 class CloudFormationStack(object):
     def __init__(self, template, parameters, name, region, timeout=600, tags=None, service_role=None,
-                 stack_policy=None, failure_action=None, disable_rollback=False):
+                 stack_policy=None, failure_action=None, disable_rollback=False, termination_protection=False):
         self.template = template
         self.parameters = parameters
         self.tags = {} if tags is None else tags
@@ -28,6 +32,7 @@ class CloudFormationStack(object):
         self.stack_policy = stack_policy
         self.failure_action = failure_action
         self.disable_rollback = disable_rollback
+        self.termination_protection = termination_protection
 
     def __str__(self):
         return str(vars(self))
@@ -301,6 +306,19 @@ class CloudFormation(object):
             return False
 
     @with_boto_retry()
+    def _set_stack_policy(self, stack):
+        """
+        Set cloudformation stack policy
+        :param stack: cfn_sphere.aws.cfn.CloudFormationStack
+        """
+        kwargs = {"StackName": stack.name}
+
+        if stack.stack_policy:
+            kwargs["StackPolicyBody"] = json.dumps(stack.stack_policy)
+
+        self.client.set_stack_policy(**kwargs)
+
+    @with_boto_retry()
     def _create_stack(self, stack):
         """
         Create cloudformation stack
@@ -325,6 +343,8 @@ class CloudFormation(object):
             kwargs["OnFailure"] = stack.failure_action
         if stack.disable_rollback:
             kwargs["DisableRollback"] = bool(stack.disable_rollback)
+        if stack.termination_protection:
+            kwargs["EnableTerminationProtection"] = bool(stack.termination_protection)
 
         self.client.create_stack(**kwargs)
 
@@ -348,7 +368,9 @@ class CloudFormation(object):
         if stack.service_role:
             kwargs["RoleARN"] = stack.service_role
         if stack.stack_policy:
-            kwargs["StackPolicyBody"] = json.dumps(stack.stack_policy)
+            stack_policy = json.dumps(stack.stack_policy)
+            kwargs["StackPolicyBody"] = stack_policy
+            kwargs["StackPolicyDuringUpdateBody"] = stack_policy
 
         self.client.update_stack(**kwargs)
 
@@ -531,7 +553,7 @@ class CloudFormation(object):
             self._delete_stack(stack)
 
             try:
-                self.wait_for_stack_action_to_complete(stack.name, "delete", 600)
+                self.wait_for_stack_action_to_complete(stack.name, "delete", stack.timeout)
             except CfnSphereBotoError as e:
                 if self.is_boto_stack_does_not_exist_exception(e.boto_exception):
                     pass
@@ -582,8 +604,8 @@ class CloudFormation(object):
                                                                           valid_from_timestamp))
 
         seen_event_ids = []
-        start = time.time()
-        while time.time() < (start + timeout):
+        start = datetime.now()
+        while datetime.now() < (start + timedelta(seconds=int(timeout))):
 
             events = self.get_stack_events(stack_name)
             events.reverse()

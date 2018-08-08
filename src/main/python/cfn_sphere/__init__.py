@@ -1,6 +1,5 @@
 # Modifications copyright (C) 2017 KCOM
 from cfn_sphere.template.template_handler import TemplateHandler
-from cfn_sphere.template.transformer import CloudFormationTemplateTransformer
 from cfn_sphere.stack_configuration.dependency_resolver import DependencyResolver
 from cfn_sphere.stack_configuration.parameter_resolver import ParameterResolver
 from cfn_sphere.exceptions import CfnStackActionFailedException
@@ -105,7 +104,8 @@ class StackActionHandler(object):
                                         timeout=stack_config.timeout,
                                         service_role=stack_config.service_role,
                                         stack_policy=stack_policy,
-                                        failure_action=stack_config.failure_action)
+                                        failure_action=stack_config.failure_action,
+                                        termination_protection=stack_config.termination_protection)
 
             if stack_name in existing_stacks:
 
@@ -127,7 +127,13 @@ class StackActionHandler(object):
             stack_config = self.config.stacks.get(stack_name)
 
             if stack_name in existing_stacks:
-                stack = CloudFormationStack(None, None, stack_name, None, None, service_role=stack_config.service_role)
+                stack = CloudFormationStack(template=None,
+                                            parameters=None,
+                                            name=stack_name,
+                                            region=self.config.region,
+                                            timeout=stack_config.timeout,
+                                            service_role=stack_config.service_role)
+
                 self.cfn.validate_stack_is_ready_for_action(stack)
                 self.cfn.delete_stack(stack)
             else:

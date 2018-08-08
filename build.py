@@ -19,7 +19,7 @@ description = "cfn-square - A CLI tool intended to simplify AWS CloudFormation h
 license = 'APACHE LICENSE, VERSION 2.0'
 summary = 'cfn-square AWS CloudFormation management cli'
 url = 'https://github.com/KCOM-Enterprise/cfn-square'
-version = '0.2.2'
+version = '0.2.3'
 
 default_task = ['clean', 'analyze', 'package']
 
@@ -37,8 +37,7 @@ def set_properties(project):
     project.depends_on('prettytable')
     project.depends_on('gitpython')
     project.depends_on('jmespath')
-    project.depends_on('future')
-    project.depends_on('bs4')
+    project.depends_on('jinja2')
     project.set_property('integrationtest_inherit_environment', True)
     project.set_property('coverage_break_build', False)
     project.set_property('install_dependencies_upgrade', True)

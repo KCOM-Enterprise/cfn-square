@@ -1,6 +1,7 @@
 # Modifications copyright (C) 2017 KCOM
 import logging
 import sys
+import os
 import boto3
 import click
 from botocore.exceptions import ClientError, BotoCoreError
@@ -10,10 +11,11 @@ from cfn_sphere import __version__
 from cfn_sphere.aws.cfn import CloudFormation
 from cfn_sphere.aws.kms import KMS
 from cfn_sphere.exceptions import CfnSphereException
+from cfn_sphere.file_generator import FileGenerator
 from cfn_sphere.file_loader import FileLoader
 from cfn_sphere.stack_configuration import Config
 from cfn_sphere.template.transformer import CloudFormationTemplateTransformer
-from cfn_sphere.util import convert_file, get_logger, get_latest_version
+from cfn_sphere.util import convert_file, get_logger, get_latest_version, kv_list_to_dict, get_resources_dir
 
 LOGGER = get_logger(root=True)
 
@@ -133,6 +135,8 @@ def execute_change_set(change_set, debug, confirm, yes, region):
               help="Stack parameter to overwrite, eg: --parameter stack1.p1=v1")
 @click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
               help="transform context yaml")
+@click.option('--suffix', '-s', default=None, envvar='CFN_SPHERE_SUFFIX', type=click.STRING,
+              help="Append a suffix to all stacks within a stack config file e.g. --suffix '-dev'")
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
@@ -140,7 +144,7 @@ def execute_change_set(change_set, debug, confirm, yes, region):
               help="Override user confirm dialog with yes (alias for -c/--confirm")
 @click.option('--dry_run', '-n', is_flag=True, default=False, envvar='CFN_SPHERE_DRY_RUN',
               help="Dry run.")
-def sync(config, parameter, debug, confirm, yes, context, dry_run):
+def sync(config, parameter, suffix, debug, confirm, yes, context, dry_run):
     confirm = confirm or yes or dry_run
 
     if debug:
@@ -157,7 +161,7 @@ def sync(config, parameter, debug, confirm, yes, context, dry_run):
 
     try:
 
-        config = Config(config_file=config, cli_params=parameter, transform_context=context)
+        config = Config(config_file=config, cli_params=parameter, stack_name_suffix=suffix, transform_context=context)
         StackActionHandler(config, dry_run).create_or_update_stacks()
     except CfnSphereException as e:
         LOGGER.error(e)
@@ -173,12 +177,14 @@ def sync(config, parameter, debug, confirm, yes, context, dry_run):
 
 @cli.command(help="Delete all stacks in a stack configuration")
 @click.argument('config', type=click.Path(exists=True))
+@click.option('--suffix', '-s', default=None, envvar='CFN_SPHERE_SUFFIX', type=click.STRING,
+              help="Append a suffix to all stacks within a stack config file e.g. --suffix '-dev'")
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def delete(config, debug, confirm, yes):
+def delete(config, suffix, debug, confirm, yes):
     confirm = confirm or yes
     if debug:
         LOGGER.setLevel(logging.DEBUG)
@@ -192,7 +198,7 @@ def delete(config, debug, confirm, yes):
 
     try:
 
-        config = Config(config)
+        config = Config(config, stack_name_suffix=suffix)
         StackActionHandler(config).delete_stacks()
     except CfnSphereException as e:
         LOGGER.error(e)
@@ -273,21 +279,101 @@ def validate_template(template_file, confirm, yes):
         sys.exit(1)
 
 
+@cli.command(help="Create a basic yaml template sceleton")
+@click.argument('path', type=click.Path(exists=False))
+@click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
+              help="Override user confirm dialog with yes")
+@click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
+              help="Override user confirm dialog with yes (alias for -c/--confirm")
+def create_template(path, confirm, yes):
+    confirm = confirm or yes
+    if not confirm:
+        check_update_available()
+
+    try:
+        working_dir = os.getcwd()
+        resources_dir = get_resources_dir()
+
+        if str(path).lower().endswith("json"):
+            template_source_path = os.path.join(resources_dir, "template-sceleton.json")
+        else:
+            template_source_path = os.path.join(resources_dir, "template-sceleton.yml")
+
+        description = click.prompt('Stack description to be used in the template', type=str)
+        FileGenerator(working_dir).render_file(template_source_path, path, {"description": description})
+
+        click.echo("Template created at {0}".format(path))
+    except CfnSphereException as e:
+        LOGGER.error(e)
+        sys.exit(1)
+    except Exception as e:
+        LOGGER.error("Failed with unexpected error")
+        LOGGER.exception(e)
+        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        sys.exit(1)
+
+
+@cli.command(help="Start a new project with simple config and an example template")
+@click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
+              help="Override user confirm dialog with yes")
+@click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
+              help="Override user confirm dialog with yes (alias for -c/--confirm")
+def start_project(confirm, yes):
+    confirm = confirm or yes
+    if not confirm:
+        check_update_available()
+
+    try:
+        region = click.prompt('AWS Region?', type=str, default="eu-west-1")
+        subdir = click.prompt('Project dir? (leave empty to use current dir)', type=str, default=".")
+
+        working_dir = os.getcwd()
+        resources_dir = get_resources_dir()
+        config_source_path = os.path.join(resources_dir, "stack_config.yml.jinja2")
+        config_dest_path = os.path.join(subdir, "stacks.yml")
+
+        template_source_path = os.path.join(resources_dir, "queue.yml")
+        template_dest_path = os.path.join(subdir, "templates", "queue.yml")
+
+        context = {
+            "region": region,
+            "template_url": "templates/queue.yml"
+        }
+
+        FileGenerator(working_dir).render_file(config_source_path, config_dest_path, context)
+        FileGenerator(working_dir).render_file(template_source_path, template_dest_path, {})
+
+        click.echo(
+            "I created a simple stack config ({0}) and a template ({1}).".format(config_dest_path, template_dest_path))
+        click.echo("Modify it to match your requirements and run 'cf sync {0}' to create the stack(s)".format(
+            config_dest_path))
+    except CfnSphereException as e:
+        LOGGER.error(e)
+        sys.exit(1)
+    except Exception as e:
+        LOGGER.error("Failed with unexpected error")
+        LOGGER.exception(e)
+        LOGGER.info("Please report at https://github.com/cfn-sphere/cfn-sphere/issues!")
+        sys.exit(1)
+
+
 @cli.command(help="Encrypt a given string with AWS Key Management Service")
 @click.argument('region', type=str)
 @click.argument('keyid', type=str)
 @click.argument('cleartext', type=str)
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
+@click.option('--context', '-c', default=None, envvar='CFN_SPHERE_CONTEXT', type=click.STRING, multiple=True,
+              help="Context for encryption, passed as kv pairs, e.g. --context key=value")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def encrypt(region, keyid, cleartext, confirm, yes):
+def encrypt(region, keyid, cleartext, context, confirm, yes):
     confirm = confirm or yes
     if not confirm:
         check_update_available()
 
     try:
-        cipertext = KMS(region).encrypt(keyid, cleartext)
+        cipertext = KMS(region).encrypt(keyid, cleartext, kv_list_to_dict(context))
         click.echo("Ciphertext: {0}".format(cipertext))
     except CfnSphereException as e:
         LOGGER.error(e)
@@ -302,17 +388,19 @@ def encrypt(region, keyid, cleartext, confirm, yes):
 @cli.command(help="Decrypt a given ciphertext with AWS Key Management Service")
 @click.argument('region', type=str)
 @click.argument('ciphertext', type=str)
+@click.option('--context', '-c', default=None, envvar='CFN_SPHERE_CONTEXT', type=click.STRING, multiple=True,
+              help="Context for decryption, passed as kv pairs, e.g. --context key=value")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def decrypt(region, ciphertext, confirm, yes):
+def decrypt(region, ciphertext, context, confirm, yes):
     confirm = confirm or yes
     if not confirm:
         check_update_available()
 
     try:
-        cleartext = KMS(region).decrypt(ciphertext)
+        cleartext = KMS(region).decrypt(ciphertext, kv_list_to_dict(context))
         click.echo("Cleartext: {0}".format(cleartext))
     except CfnSphereException as e:
         LOGGER.error(e)

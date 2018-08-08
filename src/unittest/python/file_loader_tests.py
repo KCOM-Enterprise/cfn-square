@@ -69,7 +69,7 @@ class FileLoaderTests(TestCase):
         get_file_mock.return_value = get_file_return_value
 
         FileLoader.get_yaml_or_json_file('foo.json', 'baa')
-        json_mock.loads.assert_called_once_with(get_file_return_value)
+        json_mock.loads.assert_called_once_with(get_file_return_value, encoding="utf-8")
 
     @patch("cfn_sphere.file_loader.yaml")
     @patch("cfn_sphere.file_loader.FileLoader.get_file")
@@ -267,6 +267,14 @@ class FileLoaderTests(TestCase):
 
         response = FileLoader.handle_yaml_constructors(loader_mock, "!select", node_mock)
         self.assertEqual({'Fn::Select': ["index", "list"]}, response)
+
+    def test_handle_yaml_constructors_converts_split(self):
+        loader_mock = Mock()
+        loader_mock.construct_scalar.return_value = ["delimiter", "string"]
+        node_mock = Mock(spec=yaml.ScalarNode)
+
+        response = FileLoader.handle_yaml_constructors(loader_mock, "!split", node_mock)
+        self.assertEqual({'Fn::Split': ["delimiter", "string"]}, response)
 
     def test_handle_yaml_constructors_converts_sub(self):
         loader_mock = Mock()
