@@ -1,4 +1,5 @@
 import networkx
+from six import string_types
 from networkx.exception import NetworkXUnfeasible, NetworkXNoCycle
 
 from cfn_sphere.exceptions import CfnSphereException, InvalidDependencyGraphException, CyclicDependencyException
@@ -30,7 +31,7 @@ class DependencyResolver(object):
 
     @staticmethod
     def is_parameter_reference(value):
-        if not isinstance(value, str):
+        if not isinstance(value, string_types):
             return False
 
         if value.lower().startswith("|ref|"):
@@ -79,8 +80,6 @@ class DependencyResolver(object):
         except NetworkXUnfeasible as e:
             cls.analyse_cyclic_dependencies(graph)
             raise InvalidDependencyGraphException("Could not define an order of stacks: {0}".format(e))
-
-
 
 if __name__ == "__main__":
     stacks = ['a', 'b', 'c']

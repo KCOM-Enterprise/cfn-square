@@ -6,21 +6,30 @@ import os
 import boto3
 import yaml
 from botocore.exceptions import ClientError
+from yaml.scanner import ScannerError
 
 from cfn_sphere import StackActionHandler
 from cfn_sphere.stack_configuration import Config
 
 logging.getLogger('cfn_sphere').setLevel(logging.DEBUG)
 
+SSM_INTEGRATION_PLAIN_PATH = '/test-cfn-sphere/plain_parameter'
+SSM_INTEGRATION_PLAIN_VALUE = 'testplainparameterssm'
+SSM_INTEGRATION_ENCRYPTED_PATH = '/test-cfn-sphere/encrypted_parameter'
+SSM_INTEGRATION_ENCRYPTED_VALUE = 'testencryptedparameterssm'
+
 
 class CfnSphereIntegrationTest(object):
-    def __init__(self):
+    def __init__(self, stack_name_suffix=None, cli_params=None):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
         self.test_resources_dir = self._get_resources_dir()
         self.cfn_conn = boto3.client('cloudformation', region_name='eu-west-1')
         self.kms_conn = boto3.client('kms', region_name='eu-west-1')
-        self.config = Config(config_file=os.path.join(self.test_resources_dir, "stacks.yml"))
+        self.ssm_conn = boto3.client('ssm', region_name='eu-west-1')
+        self.config = Config(config_file=os.path.join(self.test_resources_dir, "stacks.yml"),
+                             cli_params=cli_params,
+                             stack_name_suffix=stack_name_suffix)
 
     @staticmethod
     def _get_resources_dir():
@@ -136,12 +145,11 @@ class StackManagementTests(CfnSphereIntegrationTest):
             instance_stack_resources["StackResourceDetail"]["PhysicalResourceId"]
         lc = autoscale_conn.describe_launch_configurations(LaunchConfigurationNames=[lc_name])["LaunchConfigurations"][
             0]
-        print()
-        user_data = yaml.load(base64.b64decode(lc["UserData"]))
-
-        # raise Exception(user_data)
-
-        # self.assert_equal("#taupage-ami-config", user_data_lines[0])
+        try:
+            user_data = yaml.load(base64.b64decode(lc["UserData"]))
+        except ScannerError as e:
+            raise Exception(
+                "Could not parse yaml UserData from:\n{0}\nERROR:\n{1}".format(base64.b64decode(lc["UserData"]), e))
 
         self.assert_equal("cfn-sphere-test-instances", user_data["application_id"])
         self.assert_equal(1, user_data["application_version"])
@@ -171,8 +179,29 @@ class StackManagementTests(CfnSphereIntegrationTest):
         self.assert_equal("cfn-sphere-test-instances", environment_config["DYNAMO_DB_PREFIX"])
         self.assert_equal("value-5-foo", environment_config["SOME_COMBINED_VALUE"])
 
+        list_values = user_data["list-values"]
+        print(list_values)
+        self.assert_equal(len(list_values), 6)
+        self.assert_equal("a", list_values[0])
+        self.assert_equal("b", list_values[1])
+        self.assert_equal(1, list_values[2])
+        self.assert_equal(1, list_values[3])
+        self.assert_equal(2, list_values[4])
+        self.assert_true(isinstance(list_values[5], list))
+
+        sublist_values = list_values[5]
+        print(sublist_values)
+        self.assert_equal("a", sublist_values[0])
+        self.assert_equal("b", sublist_values[1])
+        self.assert_equal(10, sublist_values[2])
+        self.assert_equal(1, sublist_values[3])
+
         # uncomment this to test kms decryption
         # self.assert_equal("myCleartextString", user_data["kms_encrypted_value"])
+
+        # test ssm configuration
+        self.assert_equal(SSM_INTEGRATION_PLAIN_VALUE, user_data["ssm_plain_value"])
+        self.assert_equal(SSM_INTEGRATION_ENCRYPTED_VALUE, user_data["ssm_encrypted_value"])
 
     def test_instance_stack_uses_file_parameter(self):
         instance_stack = self.get_stack_description("cfn-sphere-test-instances")
@@ -200,6 +229,10 @@ class StackManagementTests(CfnSphereIntegrationTest):
         try:
             if setup:
                 self.logger.info("### Preparing tests ###")
+                self.ssm_conn.put_parameter(Name=SSM_INTEGRATION_PLAIN_PATH, Type='String',
+                                            Value=SSM_INTEGRATION_PLAIN_VALUE)
+                self.ssm_conn.put_parameter(Name=SSM_INTEGRATION_ENCRYPTED_PATH, Type='SecureString',
+                                            Value=SSM_INTEGRATION_ENCRYPTED_VALUE)
                 self.delete_stacks()
                 self.verify_stacks_are_gone()
                 self.sync_stacks()
@@ -227,7 +260,57 @@ class StackManagementTests(CfnSphereIntegrationTest):
                 self.logger.info("### Cleaning up environment ###")
                 self.delete_stacks()
                 self.verify_stacks_are_gone()
+                self.ssm_conn.delete_parameter(Name=SSM_INTEGRATION_PLAIN_PATH)
+                self.ssm_conn.delete_parameter(Name=SSM_INTEGRATION_ENCRYPTED_PATH)
+
+
+class StackSuffixingTests(CfnSphereIntegrationTest):
+    def __init__(self):
+        suffix = "-suffix"
+        cli_params = ["cfn-sphere-test-vpc.testtag=value_supplied_by_cli_param"]
+
+        super(StackSuffixingTests, self).__init__(stack_name_suffix=suffix, cli_params=cli_params)
+
+    def test_instance_stack_uses_vpc_outputs(self):
+        self.logger.info(
+            "Verifying cfn-sphere-test-instances-suffix uses referenced values from cfn-sphere-test-vpc-suffix stack")
+
+        vpc_stack = self.get_stack_description("cfn-sphere-test-vpc-suffix")
+        instance_stack = self.get_stack_description("cfn-sphere-test-instances-suffix")
+
+        vpc_stack_outputs = self.get_output_dict_from_stack(vpc_stack)
+        instance_stack_parameters = self.get_parameter_dict_from_stack(instance_stack)
+        vpc_stack_parameters = self.get_parameter_dict_from_stack(vpc_stack)
+
+        self.assert_equal(vpc_stack_outputs["id"], instance_stack_parameters["vpcID"])
+        self.assert_equal(vpc_stack_outputs["subnetA"], instance_stack_parameters["subnetID"])
+        self.assert_equal(vpc_stack_parameters["testtag"], "value_supplied_by_cli_param")
+
+    def run(self, setup=True, cleanup=True):
+        try:
+            if setup:
+                self.logger.info("### Preparing tests ###")
+                self.ssm_conn.put_parameter(Name=SSM_INTEGRATION_PLAIN_PATH, Type='String',
+                                            Value=SSM_INTEGRATION_PLAIN_VALUE)
+                self.ssm_conn.put_parameter(Name=SSM_INTEGRATION_ENCRYPTED_PATH, Type='SecureString',
+                                            Value=SSM_INTEGRATION_ENCRYPTED_VALUE)
+
+                self.delete_stacks()
+                self.verify_stacks_are_gone()
+                self.sync_stacks()
+
+            self.logger.info("### Executing tests ###")
+            self.test_instance_stack_uses_vpc_outputs()
+
+        finally:
+            if cleanup:
+                self.logger.info("### Cleaning up environment ###")
+                self.delete_stacks()
+                self.verify_stacks_are_gone()
+                self.ssm_conn.delete_parameter(Name=SSM_INTEGRATION_PLAIN_PATH)
+                self.ssm_conn.delete_parameter(Name=SSM_INTEGRATION_ENCRYPTED_PATH)
 
 
 if __name__ == "__main__":
     StackManagementTests().run()
+    StackSuffixingTests().run()

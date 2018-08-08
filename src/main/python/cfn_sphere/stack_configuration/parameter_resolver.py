@@ -1,15 +1,15 @@
-import pprint
-
 import jmespath
+from six import string_types
 from jmespath.exceptions import JMESPathError
 
 from cfn_sphere.file_loader import FileLoader
 from cfn_sphere.aws.cfn import CloudFormation
 from cfn_sphere.aws.ec2 import Ec2Api
 from cfn_sphere.aws.kms import KMS
+from cfn_sphere.aws.ssm import SSM
 from cfn_sphere.exceptions import CfnSphereException
 from cfn_sphere.stack_configuration.dependency_resolver import DependencyResolver
-from cfn_sphere.util import get_logger
+from cfn_sphere.util import get_logger, kv_list_string_to_dict
 from cfn_sphere.transform import TransformList
 
 class ParameterResolver(object):
@@ -22,6 +22,7 @@ class ParameterResolver(object):
         self.cfn = CloudFormation(region)
         self.ec2 = Ec2Api(region)
         self.kms = KMS(region)
+        self.ssm = SSM(region)
 
     @staticmethod
     def convert_list_to_string(value):
@@ -62,6 +63,10 @@ class ParameterResolver(object):
         return value.lower().startswith('|kms|')
 
     @staticmethod
+    def is_ssm(value):
+        return value.lower().startswith('|ssm|')
+
+    @staticmethod
     def get_default_from_keep_value(value):
         return value.split('|', 2)[2]
 
@@ -89,49 +94,74 @@ class ParameterResolver(object):
         stack_outputs = self.cfn.get_stacks_outputs()
 
         for key, value in stack_config.parameters.items():
-
-            if isinstance(value, (list, TransformList)):
-                self.logger.debug("List parameter found for {0}".format(key))
-                for i, item in enumerate(value):
-                    if DependencyResolver.is_parameter_reference(item):
-                        referenced_stack, output_name = DependencyResolver.parse_stack_reference_value(item)
-                        value[i] = str(self.get_output_value(stack_outputs, referenced_stack, output_name))
-
-                value_string = self.convert_list_to_string(value)
-                resolved_parameters[key] = value_string
-
-            elif isinstance(value, str):
-
-                if DependencyResolver.is_parameter_reference(value):
-                    referenced_stack, output_name = DependencyResolver.parse_stack_reference_value(value)
-                    resolved_parameters[key] = str(self.get_output_value(stack_outputs, referenced_stack, output_name))
-
-                elif self.is_keep_value(value):
-                    resolved_parameters[key] = str(self.get_latest_value(key, value, stack_name))
-
-                elif self.is_taupage_ami_reference(value):
-                    resolved_parameters[key] = str(self.ec2.get_latest_taupage_image_id())
-
-                elif self.is_kms(value):
-                    resolved_parameters[key] = str(self.kms.decrypt(value.split('|', 2)[2]))
-
-                elif self.is_file(value):
-                    resolved_parameters[key] = self.handle_file_value(value, stack_config.working_dir)
-
-                else:
-                    resolved_parameters[key] = value
-
-            elif isinstance(value, bool):
-                resolved_parameters[key] = str(value).lower()
-            elif isinstance(value, (int, float)):
-                resolved_parameters[key] = str(value)
-            else:
-                raise NotImplementedError("Cannot handle {0} type for key: {1}".format(type(value), key))
+            resolved_parameters[key] = self.resolve_parameter_value(key, value, stack_name, stack_config, stack_outputs)
 
         if cli_parameters:
             return self.update_parameters_with_cli_parameters(resolved_parameters, cli_parameters, stack_name)
         else:
             return resolved_parameters
+
+    def resolve_parameter_value(self, key, value, stack_name, stack_config, stack_outputs):
+        if isinstance(value, (list, TransformList)):
+            self.logger.debug("List parameter found for {0}".format(key))
+            for i, item in enumerate(value):
+                if DependencyResolver.is_parameter_reference(item):
+                    referenced_stack, output_name = DependencyResolver.parse_stack_reference_value(item)
+                    value[i] = str(self.get_output_value(stack_outputs, referenced_stack, output_name))
+
+            return self.convert_list_to_string(value)
+
+        elif isinstance(value, string_types):
+
+            if DependencyResolver.is_parameter_reference(value):
+                referenced_stack, output_name = DependencyResolver.parse_stack_reference_value(value)
+                return str(self.get_output_value(stack_outputs, referenced_stack, output_name))
+
+            elif self.is_keep_value(value):
+                return str(self.get_latest_value(key, value, stack_name))
+
+            elif self.is_taupage_ami_reference(value):
+                return str(self.ec2.get_latest_taupage_image_id())
+
+            elif self.is_kms(value):
+                return self.handle_kms_value(value)
+
+            elif self.is_ssm(value):
+                return self.handle_ssm_value(value)
+
+            elif self.is_file(value):
+                return self.handle_file_value(value, stack_config.working_dir)
+
+            else:
+                return value
+
+        elif isinstance(value, bool):
+            return str(value).lower()
+        elif isinstance(value, (int, float)):
+            return str(value)
+        elif not value:
+            raise CfnSphereException("Parameter {0} does not seem to have a value".format(key))
+        else:
+            raise NotImplementedError("Cannot handle {0} type for key: {1}".format(type(value), key))
+
+    def handle_ssm_value(self, value):
+        parts = value.split('|')
+        if len(parts) == 3:
+            return str(self.ssm.get_parameter(parts[2]))
+        
+        raise CfnSphereException(
+                "Invalid format for |ssm| macro, it must be |ssm|/path/to/parameter")
+
+    def handle_kms_value(self, value):
+        parts = value.split('|')
+
+        if len(parts) == 3:
+            return str(self.kms.decrypt(parts[2]))
+        elif len(parts) == 4:
+            return str(self.kms.decrypt(parts[3], encryption_context=kv_list_string_to_dict(parts[2])))
+        else:
+            raise CfnSphereException(
+                "Invalid format for |Kms| macro, it must be |Kms[|<encryption_context>]|<ciphertext>")
 
     @staticmethod
     def handle_file_value(value, working_dir):

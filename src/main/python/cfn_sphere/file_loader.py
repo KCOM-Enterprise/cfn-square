@@ -26,7 +26,8 @@ class FileLoader(object):
             template_body_dict = cls.get_yaml_or_json_file(url, working_dir)
             return CloudFormationTemplate(body_dict=template_body_dict, name=os.path.basename(url))
         except Exception as e:
-            raise TemplateErrorException("Could not load file from {0}: {1}".format(url, e))
+            raise TemplateErrorException(
+                "Could not load file from {0}: {1}".format(url, e))
 
     @staticmethod
     def handle_yaml_constructors(loader, suffix, node):
@@ -34,25 +35,28 @@ class FileLoader(object):
         Constructor method for PyYaml to handle cfn intrinsic functions specified as yaml tags
         """
         function_mapping = {
-            "!base64": ("Fn::Base64", lambda x: x),
             "!and": ("Fn::And", lambda x: x),
+            "!base64": ("Fn::Base64", lambda x: x),
+            "!condition": ("Condition", lambda x: x),
             "!equals": ("Fn::Equals", lambda x: x),
-            "!if": ("Fn::If", lambda x: x),
-            "!not": ("Fn::Not", lambda x: x),
-            "!or": ("Fn::Or", lambda x: x),
             "!findinmap": ("Fn::FindInMap", lambda x: x),
-            "!getatt": ("Fn::GetAtt", lambda x: str(x).split(".",1)),
+            "!getatt": ("Fn::GetAtt", lambda x: str(x).split(".", 1)),
             "!getazs": ("Fn::GetAZs", lambda x: x),
+            "!if": ("Fn::If", lambda x: x),
             "!importvalue": ("Fn::ImportValue", lambda x: x),
             "!join": ("Fn::Join", lambda x: [x[0], x[1]]),
+            "!not": ("Fn::Not", lambda x: x),
+            "!or": ("Fn::Or", lambda x: x),
+            "!ref": ("Ref", lambda x: x),
             "!select": ("Fn::Select", lambda x: x),
+            "!split": ("Fn::Split", lambda x: x),
             "!sub": ("Fn::Sub", lambda x: x),
-            "!ref": ("Ref", lambda x: x)
         }
         try:
             function, value_transformer = function_mapping[str(suffix).lower()]
         except KeyError as key:
-            raise CfnSphereException("Unsupported cfn intrinsic function tag found: {0}".format(key))
+            raise CfnSphereException(
+                "Unsupported cfn intrinsic function tag found: {0}".format(key))
 
         if isinstance(node, yaml.ScalarNode):
             value = loader.construct_scalar(node)
@@ -61,7 +65,8 @@ class FileLoader(object):
         elif isinstance(node, yaml.MappingNode):
             value = loader.construct_mapping(node)
         else:
-            raise CfnSphereException("Invalid yaml node found while handling cfn intrinsic function tags")
+            raise CfnSphereException(
+                "Invalid yaml node found while handling cfn intrinsic function tags")
 
         return {function: value_transformer(value)}
 
@@ -77,11 +82,11 @@ class FileLoader(object):
 
         try:
             if url.lower().endswith(".json"):
-                return json.loads(file_content)
+                return json.loads(file_content, encoding='utf-8')
             elif url.lower().endswith(".template"):
                 # try to load json 
                 try:
-                    return json.loads(file_content)
+                    return json.loads(file_content, encoding='utf-8')
                 except Exception as e:
                     # try to load yaml
                     yaml.add_multi_constructor(u"", cls.handle_yaml_constructors)
@@ -90,7 +95,8 @@ class FileLoader(object):
                 yaml.add_multi_constructor(u"", cls.handle_yaml_constructors)
                 return yaml.load(file_content)
             else:
-                raise CfnSphereException("Invalid suffix, use [json|template|yml|yaml]")
+                raise CfnSphereException(
+                    "Invalid suffix, use [json|template|yml|yaml]")
         except Exception as e:
             raise CfnSphereException(e)
 
@@ -123,7 +129,8 @@ class FileLoader(object):
             with codecs.open(url, 'r', encoding='utf-8') as f:
                 return f.read()
         except Exception as e:
-            raise CfnSphereException("Could not load file from {0}: {1}".format(url, e))
+            raise CfnSphereException(
+                "Could not load file from {0}: {1}".format(url, e))
 
     @staticmethod
     def _s3_get_file(url):
