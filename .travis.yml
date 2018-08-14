@@ -4,7 +4,7 @@ python:
 - '3.4'
 - '3.5'
 - '3.6'
-- 'pypy3.5'
+- pypy3.5
 before_install:
 - git fetch --unshallow
 install:
@@ -19,11 +19,11 @@ before_deploy:
 deploy:
   provider: pypi
   user: steveparker-kcom
-  password:
-    secure: t94MDd1rLDAL6hk9FJO3VUmP5j9TWIlIsl/ShU6sqx26Mf9CS+w4sKaHvQUaC6GnyiyOmYoWP1mVfLbX+UI0X3QWoI+aarc7nT/9hhrkbWDcx8NMf1l9WPJrtey4pdt8bX4eiaxEuibk4Q8aCLVcERIWLZnf11TQKbka2eevCjBce2Vazay1fPGgXoC6jfpJMi118FpkylXQ0Tk32eUvY5fT479hqVDaFZ7h2wCNI9wM8j9EBFROiiu5BcNGgYVzZmCX2QGVtaA5vw7UhScgtsMe6WnTR/uuoM4iBJ6EawaBfq7+ZPI1UHEUwvghpqHGFZqcPHLX9PNCtNRGz/t3wasxokzw9wXtvL5+aDrCc9fC/XbFFTCPtJh4vQRGQAh+IJdXZhAf0QqAkXkHVEDBD8lNOi7jw+dPJPb/7dip8rFaQZMie3uDIBRrhNq8bjhsu2ibOdriyH7hVnz6Mg11ZLUNATBuLlOgkB16/fDt9YmBPmnpryOLCg+CBku7Z/dT6kTofTEBnHgUYXHDPynJiRnKN8xGsuSz++5r/ztGwyU5bzocvl/dkhiulTnWaFEqxtyLPRReCXtS/tDWWggNBUmamwj0xzJah63XOiVwzbZXvwkrTpjV3waPghN7tcHBhWl4GugrHxNV+XafwwtgMlM1i1gCyhMHHWc2x1UN9NQ=
   distributions: sdist
   skip_cleanup: true
   on:
     repo: KCOM-Enterprise/cfn-square
     branch: master
     python: '3.5'
+  password:
+    secure: CD7ZdWHsL42EPsiClV4zU8xFfGHEAYcgcD4dCrXI+d25RuKI2Yr8fMUZNLqPH8kVIjzcRJ2sHve/LQK+imCVSpqc94GkULGMssa/AUbkw1kM7F88YDDBFK2l9ngNlV2RzUoNUOm5Vex5KKgxlbTmd79xcJz7vpUv0705V52lRgcDZsrI7MjMDgs/i2yNaRxsgmKSyMRkMoFCCODfc6386l1zwo3kw1o7oPAlTvYtAIwRd+G20gJw4Qy7yx4tKBGM5VtzrfoS1IWH+hJm179t1ZcOUJkdZ2MLKUPk8gKw4hvAIi4D+/At+IPHPNhBHt++sFyyrTWK2ocoQC8cNOluP52QLfOobn0RO+6rNziCmL59V1o2z0LSsyb2NSf3TzTPmqq1ECc2ckzIDFHyg3DIn5xcEGXQa8KG6jv5OZDmsvn9rJJHhE7LmYc63Nj6/cgdCzOZKIVekFfUqiuJo5KfhDIlivXbdCMnfQGQmW+aLfVIjGA17OiDlJahsOY4JzBZOtuMJHqOw4UldZAfk7WHtMG5chsfObRztJfQxDDvQ0h8j6eJCXzS0skX1cdtx0PI/NBnfLd3jtt886S0wIx6lCvhJuaMX/c2GWXw5DLLEamo/8bLeBICzt7hOCNEfrAC8k/MMuLm0ezaSVE+DKf3R5ey2MFDl09OaUIL3oVNh8w=
