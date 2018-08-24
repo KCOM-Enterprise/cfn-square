@@ -3,6 +3,7 @@ import logging
 import sys
 import boto3
 import click
+import re
 from botocore.exceptions import ClientError, BotoCoreError
 
 from cfn_sphere import StackActionHandler
@@ -112,6 +113,12 @@ def execute_change_set(change_set, debug, confirm, yes, region):
             get_first_account_alias_or_account_id()), abort=True)
 
     try:
+        matched = re.match(r'arn:aws:cloudformation:([^:]+):.*', change_set)
+
+        if matched:
+            LOGGER.info('ARN detected, setting region to {}'.format(matched.group(1)))
+            region = matched.group(1)
+
         config_dict = {'change_set': change_set, 'region': str(region)}
         config = Config(config_dict=config_dict)
         StackActionHandler(config).execute_change_set()
