@@ -14,6 +14,9 @@ import time
 
 logging.getLogger('boto').setLevel(logging.FATAL)
 
+STACK_DESCRIPTIONS = 'stack_descriptions'
+RESOURCE_ALL_STACKS = 'all_stacks'
+
 
 class CloudFormationStack(object):
     def __init__(self, template, parameters, name, region, timeout=600, tags=None, service_role=None,
@@ -46,6 +49,7 @@ class CloudFormation(object):
         self.client = boto3.client('cloudformation', region_name=region)
         self.resource = boto3.resource('cloudformation', region_name=region)
         self.dry_run = dry_run
+        self.cached = {STACK_DESCRIPTIONS: None, RESOURCE_ALL_STACKS: None}
 
     def get_stack(self, stack_name):
         """
@@ -66,7 +70,10 @@ class CloudFormation(object):
         :raise CfnSphereBotoError:
         """
         try:
-            return list(self.resource.stacks.all())
+            if not self.cached[RESOURCE_ALL_STACKS]:
+                self.cached[RESOURCE_ALL_STACKS] = list(self.resource.stacks.all())
+
+            return self.cached[RESOURCE_ALL_STACKS]
         except (BotoCoreError, ClientError) as e:
             raise CfnSphereBotoError(e)
 
@@ -76,10 +83,7 @@ class CloudFormation(object):
         Get friendly stack name by stack arn
         :return: string
         """
-        response = self.client.describe_stacks(
-            StackName=stack_arn
-        )
-        return response['Stacks'][0]['StackName']
+        return self.get_stack_description(stack_arn)['StackName']
 
     @timed
     @with_boto_retry()
@@ -91,7 +95,15 @@ class CloudFormation(object):
         :raise CfnSphereBotoError:
         """
         try:
-            return self.client.describe_stacks(StackName=stack_name)["Stacks"][0]
+            if not self.cached[STACK_DESCRIPTIONS]:
+                self.get_stack_descriptions()
+
+            for stack in self.cached[STACK_DESCRIPTIONS]:
+                if stack['StackId'] == stack_name or stack['StackName'] == stack_name:
+                    return stack
+
+            return {}
+
         except (BotoCoreError, ClientError) as e:
             raise CfnSphereBotoError(e)
 
@@ -104,10 +116,13 @@ class CloudFormation(object):
         :raise CfnSphereBotoError:
         """
         try:
-            stacks = []
-            for page in self.client.get_paginator('describe_stacks').paginate():
-                stacks += page["Stacks"]
-            return stacks
+            if self.cached[STACK_DESCRIPTIONS] is None:
+                self.cached[STACK_DESCRIPTIONS] = []
+
+                for page in self.client.get_paginator('describe_stacks').paginate():
+                    self.cached[STACK_DESCRIPTIONS] += page["Stacks"]
+
+            return self.cached[STACK_DESCRIPTIONS]
         except (BotoCoreError, ClientError) as e:
             raise CfnSphereBotoError(e)
 
@@ -328,6 +343,12 @@ class CloudFormation(object):
 
         self.client.create_stack(**kwargs)
 
+        # Blank it out instead of updating the cache as if it's needed again
+        # the code will automatically populate the describe/stacks cache again.
+        self.cached = {STACK_DESCRIPTIONS: None, RESOURCE_ALL_STACKS: None}
+
+
+
     @with_boto_retry()
     def _update_stack(self, stack):
         """
@@ -351,6 +372,10 @@ class CloudFormation(object):
             kwargs["StackPolicyBody"] = json.dumps(stack.stack_policy)
 
         self.client.update_stack(**kwargs)
+
+        # Blank it out instead of updating the cache as if it's needed again
+        # the code will automatically populate the describe/stacks cache again.
+        self.cached = {STACK_DESCRIPTIONS: None, RESOURCE_ALL_STACKS: None}
 
     @with_boto_retry()
     def _describe_stack_change_set(self, change_set):
@@ -420,6 +445,12 @@ class CloudFormation(object):
 
         self.client.delete_stack(**kwargs)
 
+        self.cached[RESOURCE_ALL_STACKS] = [s for s in self.cached_stacks if not s.name == stack.name]
+
+        self.cached[STACK_DESCRIPTIONS] = [s for s in self.cached_stacks \
+                                if not (s.name == stack['StackId'] or s.name == stack['StackName'])]
+
+
     def create_change_set(self, stack, change_set_type):
         self.logger.debug("Creating stack changeset: {}".format(stack))
         assert isinstance(stack, CloudFormationStack)
@@ -447,6 +478,11 @@ class CloudFormation(object):
             else:
                 self.logger.info("Update completed for {0}".format(stack.name))
 
+
+            # Blank it out instead of updating the cache as if it's needed again
+            # the code will automatically populate the describe/stacks cache again.
+            self.cached = {STACK_DESCRIPTIONS: None, RESOURCE_ALL_STACKS: None}
+
         except (BotoCoreError, ClientError, CfnSphereBotoError) as e:
             raise CfnStackActionFailedException("Could not execute {0}: {1}".format(change_set, e))
 
@@ -465,7 +501,7 @@ class CloudFormation(object):
             
             if self.dry_run:
                 self.logger.info('Dry run. Exiting.')
-                
+
                 return
 
             self._create_stack(stack)

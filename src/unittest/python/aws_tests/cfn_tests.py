@@ -6,6 +6,8 @@ except ImportError:
     from mock import Mock, patch
 
 import datetime
+import logging
+
 
 from botocore.exceptions import ClientError
 from dateutil.tz import tzutc
@@ -15,6 +17,7 @@ from cfn_sphere.aws.cfn import CloudFormationStack
 from cfn_sphere.exceptions import CfnStackActionFailedException, CfnSphereBotoError
 from cfn_sphere.template import CloudFormationTemplate
 
+logging.getLogger('cfn_sphere').setLevel(logging.DEBUG)
 
 class CloudFormationApiTests(TestCase):
     @patch('cfn_sphere.aws.cfn.boto3.resource')
