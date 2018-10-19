@@ -44,7 +44,7 @@ class DependencyResolver(object):
         for name in desired_stacks.keys():
             graph.add_node(name)
         for name, data in desired_stacks.items():
-            if data:
+            if data and data.parameters:
                 for _, value in data.parameters.items():
                     if isinstance(value, (list, TransformList)):
                         for item in value:
