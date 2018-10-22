@@ -17,7 +17,7 @@ class StackActionHandler(object):
         self.logger = get_logger(root=True)
         self.config = config
         self.cfn = CloudFormation(region=self.config.region, dry_run=dry_run)
-        self.parameter_resolver = ParameterResolver(region=self.config.region)
+        self.parameter_resolver = ParameterResolver(self.cfn, region=self.config.region)
         self.cli_parameters = config.cli_params
 
     def execute_change_set(self):
