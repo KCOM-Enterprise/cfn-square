@@ -3,6 +3,7 @@ from six import string_types
 from jmespath.exceptions import JMESPathError
 
 from cfn_sphere.file_loader import FileLoader
+from cfn_sphere.aws.cfn import CloudFormation
 from cfn_sphere.aws.ec2 import Ec2Api
 from cfn_sphere.aws.kms import KMS
 from cfn_sphere.aws.ssm import SSM
@@ -17,8 +18,9 @@ class ParameterResolver(object):
     """
     Resolves a given artifact identifier to the value of a stacks output.
     """
+    DEFAULT_REGION = 'eu-west-1'
 
-    def __init__(self, cfn, region="eu-west-1"):
+    def __init__(self, cfn=CloudFormation(DEFAULT_REGION), region=DEFAULT_REGION):
         self.logger = get_logger()
         self.cfn = cfn
         self.ec2 = Ec2Api(region)
