@@ -20,7 +20,7 @@ class ParameterResolver(object):
     """
     DEFAULT_REGION = 'eu-west-1'
 
-    def __init__(self, cfn=CloudFormation(DEFAULT_REGION), region=DEFAULT_REGION):
+    def __init__(self, cfn, region=DEFAULT_REGION):
         self.logger = get_logger()
         self.cfn = cfn
         self.ec2 = Ec2Api(region)
