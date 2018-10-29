@@ -18,10 +18,11 @@ class ParameterResolver(object):
     """
     Resolves a given artifact identifier to the value of a stacks output.
     """
+    DEFAULT_REGION = 'eu-west-1'
 
-    def __init__(self, region="eu-west-1"):
+    def __init__(self, cfn, region=DEFAULT_REGION):
         self.logger = get_logger()
-        self.cfn = CloudFormation(region)
+        self.cfn = cfn
         self.ec2 = Ec2Api(region)
         self.kms = KMS(region)
         self.ssm = SSM(region)
