@@ -180,12 +180,14 @@ def sync(config, parameter, debug, confirm, yes, context, dry_run):
 
 @cli.command(help="Delete all stacks in a stack configuration")
 @click.argument('config', type=click.Path(exists=True))
+@click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
+              help="transform context yaml")
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def delete(config, debug, confirm, yes):
+def delete(config, context, debug, confirm, yes):
     confirm = confirm or yes
     if debug:
         LOGGER.setLevel(logging.DEBUG)
@@ -199,7 +201,7 @@ def delete(config, debug, confirm, yes):
 
     try:
 
-        config = Config(config)
+        config = Config(config, transform_context=contex)
         StackActionHandler(config).delete_stacks()
     except CfnSphereException as e:
         LOGGER.error(e)
