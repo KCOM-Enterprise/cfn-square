@@ -445,9 +445,9 @@ class CloudFormation(object):
 
         self.client.delete_stack(**kwargs)
 
-        self.cached[RESOURCE_ALL_STACKS] = [s for s in self.cached_stacks if not s.name == stack.name]
+        self.cached[RESOURCE_ALL_STACKS] = [s for s in self.cached if not s.name == stack.name]
 
-        self.cached[STACK_DESCRIPTIONS] = [s for s in self.cached_stacks \
+        self.cached[STACK_DESCRIPTIONS] = [s for s in self.cached \
                                 if not (s.name == stack['StackId'] or s.name == stack['StackName'])]
 
 
