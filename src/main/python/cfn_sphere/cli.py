@@ -201,7 +201,7 @@ def delete(config, context, debug, confirm, yes):
 
     try:
 
-        config = Config(config, transform_context=contex)
+        config = Config(config, transform_context=context)
         StackActionHandler(config).delete_stacks()
     except CfnSphereException as e:
         LOGGER.error(e)
