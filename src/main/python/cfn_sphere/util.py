@@ -6,6 +6,7 @@ import time
 from functools import wraps
 
 import yaml
+from botocore.exceptions import BotoCoreError, ClientError
 from dateutil import parser
 from git import Repo, InvalidGitRepositoryError
 from prettytable import PrettyTable
@@ -176,8 +177,15 @@ def with_boto_retry(max_retries=3, pause_time_multiplier=5):
             while True:
                 try:
                     return function(*args, **kwds)
-                except CfnSphereBotoError as e:
-                    if not e.is_throttling_exception or retries >= max_retries:
+                except (CfnSphereBotoError, BotoCoreError, ClientError) as e:
+                    if isinstance(e, (BotoCoreError, ClientError)):
+                        # Wrap Boto exception in CfnSphereBotoError so we can
+                        # use it's `is_throttling_exception` attribute.
+                        is_throttling_exception = CfnSphereBotoError(e).is_throttling_exception
+                    else:
+                        is_throttling_exception = e.is_throttling_exception
+
+                    if not is_throttling_exception or retries >= max_retries:
                         raise e
 
                     sleep_time = pause_time_multiplier * (2 ** retries)
