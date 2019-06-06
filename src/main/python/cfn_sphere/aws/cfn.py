@@ -95,7 +95,7 @@ class CloudFormation(object):
         :raise CfnSphereBotoError:
         """
         try:
-            if not self.cached[STACK_DESCRIPTIONS]:
+            if self.cached[STACK_DESCRIPTIONS] is None:
                 self.get_stack_descriptions()
 
             for stack in self.cached[STACK_DESCRIPTIONS]:
@@ -443,13 +443,20 @@ class CloudFormation(object):
         if stack.service_role:
             kwargs["RoleARN"] = stack.service_role
 
+        self.cached[RESOURCE_ALL_STACKS] = [
+            iter_stack
+            for iter_stack in self.cached[RESOURCE_ALL_STACKS]
+            if iter_stack.name != stack.name
+        ]
+
+        if self.cached[STACK_DESCRIPTIONS] is not None:
+            self.cached[STACK_DESCRIPTIONS] = [
+                iter_stack
+                for iter_stack in self.cached[STACK_DESCRIPTIONS]
+                if iter_stack.name != stack.name
+            ]
+
         self.client.delete_stack(**kwargs)
-
-        self.cached[RESOURCE_ALL_STACKS] = [s for s in self.cached_stacks if not s.name == stack.name]
-
-        self.cached[STACK_DESCRIPTIONS] = [s for s in self.cached_stacks \
-                                if not (s.name == stack['StackId'] or s.name == stack['StackName'])]
-
 
     def create_change_set(self, stack, change_set_type):
         self.logger.debug("Creating stack changeset: {}".format(stack))
