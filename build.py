@@ -32,7 +32,7 @@ def set_properties(project):
     project.depends_on('six')
     project.depends_on("click")
     project.depends_on("boto3", version=">=1.4.1")
-    project.depends_on("pyyaml")
+    project.depends_on("pyyaml", version="==3.13")
     project.depends_on("networkx")
     project.depends_on('prettytable')
     project.depends_on('gitpython')
