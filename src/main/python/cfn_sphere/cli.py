@@ -2,8 +2,11 @@
 import logging
 import sys
 import boto3
+import botocore.session
 import click
+import os.path
 import re
+from botocore.credentials import JSONFileCache
 from botocore.exceptions import ClientError, BotoCoreError
 
 from cfn_sphere import StackActionHandler
@@ -51,6 +54,8 @@ def cli():
 
 @cli.command(help="create change set")
 @click.argument('config', type=click.Path(exists=True))
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--parameter', '-p', default=None, envvar='CFN_SPHERE_PARAMETERS', type=click.STRING, multiple=True,
               help="Stack parameter to overwrite, eg: --parameter stack1.p1=v1")
 @click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
@@ -62,7 +67,9 @@ def cli():
               help="Override user confirm dialog with yes (alias for -c/--confirm")
 @click.option('--dry_run', '-n', is_flag=True, default=False, envvar='CFN_SPHERE_DRY_RUN',
               help="Dry run.")
-def create_change_set(config, parameter, debug, confirm, yes, context, dry_run):
+def create_change_set(config, profile, parameter, debug, confirm, yes, context, dry_run):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if debug:
         LOGGER.setLevel(logging.DEBUG)
@@ -92,13 +99,17 @@ def create_change_set(config, parameter, debug, confirm, yes, context, dry_run):
 
 @cli.command(help="execute change set")
 @click.argument('change_set')
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
 @click.option('--region', '-r', default='eu-west-1', type=click.STRING, help="Change set region")
-def execute_change_set(change_set, debug, confirm, yes, region):
+def execute_change_set(change_set, profile, debug, confirm, yes, region):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if debug:
         LOGGER.setLevel(logging.DEBUG)
@@ -136,6 +147,8 @@ def execute_change_set(change_set, debug, confirm, yes, region):
 
 @cli.command(help="Sync AWS resources with definition file")
 @click.argument('config', type=click.Path(exists=True))
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--parameter', '-p', default=None, envvar='CFN_SPHERE_PARAMETERS', type=click.STRING, multiple=True,
               help="Stack parameter to overwrite, eg: --parameter stack1.p1=v1")
 @click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
@@ -147,7 +160,9 @@ def execute_change_set(change_set, debug, confirm, yes, region):
               help="Override user confirm dialog with yes (alias for -c/--confirm")
 @click.option('--dry_run', '-n', is_flag=True, default=False, envvar='CFN_SPHERE_DRY_RUN',
               help="Dry run.")
-def sync(config, parameter, debug, confirm, yes, context, dry_run):
+def sync(config, profile, parameter, debug, confirm, yes, context, dry_run):
+    _set_profile(profile)
+
     confirm = confirm or yes or dry_run
 
     if debug:
@@ -180,6 +195,8 @@ def sync(config, parameter, debug, confirm, yes, context, dry_run):
 
 @cli.command(help="Delete all stacks in a stack configuration")
 @click.argument('config', type=click.Path(exists=True))
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--context', '-t', default=None, envvar='CFN_SPHERE_TRANSFORM_CONTEXT', type=click.STRING, multiple=False,
               help="transform context yaml")
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
@@ -187,7 +204,9 @@ def sync(config, parameter, debug, confirm, yes, context, dry_run):
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def delete(config, context, debug, confirm, yes):
+def delete(config, profile, context, debug, confirm, yes):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if debug:
         LOGGER.setLevel(logging.DEBUG)
@@ -217,12 +236,16 @@ def delete(config, context, debug, confirm, yes):
 
 @cli.command(help="Convert JSON to YAML or vice versa")
 @click.argument('template_file', type=click.Path(exists=True))
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--debug', '-d', is_flag=True, default=False, envvar='CFN_SPHERE_DEBUG', help="Debug output")
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def convert(template_file, debug, confirm, yes):
+def convert(template_file, profile, debug, confirm, yes):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if not confirm:
         check_update_available()
@@ -240,11 +263,15 @@ def convert(template_file, debug, confirm, yes):
 
 @cli.command(help="Render template as it would be used to create/update a stack")
 @click.argument('template_file', type=click.Path(exists=True))
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def render_template(template_file, confirm, yes):
+def render_template(template_file, profile, confirm, yes):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if not confirm:
         check_update_available()
@@ -257,11 +284,15 @@ def render_template(template_file, confirm, yes):
 
 @cli.command(help="Validate template with CloudFormation API")
 @click.argument('template_file', type=click.Path(exists=True))
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def validate_template(template_file, confirm, yes):
+def validate_template(template_file, profile, confirm, yes):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if not confirm:
         check_update_available()
@@ -286,11 +317,15 @@ def validate_template(template_file, confirm, yes):
 @click.argument('region', type=str)
 @click.argument('keyid', type=str)
 @click.argument('cleartext', type=str)
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def encrypt(region, keyid, cleartext, confirm, yes):
+def encrypt(region, keyid, cleartext, profile, confirm, yes):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if not confirm:
         check_update_available()
@@ -311,11 +346,15 @@ def encrypt(region, keyid, cleartext, confirm, yes):
 @cli.command(help="Decrypt a given ciphertext with AWS Key Management Service")
 @click.argument('region', type=str)
 @click.argument('ciphertext', type=str)
+@click.option('--profile', default=None, envvar='AWS_PROFILE', type=click.STRING,
+              help='Use a specific profile from your credential file')
 @click.option('--confirm', '-c', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes")
 @click.option('--yes', '-y', is_flag=True, default=False, envvar='CFN_SPHERE_CONFIRM',
               help="Override user confirm dialog with yes (alias for -c/--confirm")
-def decrypt(region, ciphertext, confirm, yes):
+def decrypt(region, ciphertext, profile, confirm, yes):
+    _set_profile(profile)
+
     confirm = confirm or yes
     if not confirm:
         check_update_available()
@@ -331,6 +370,14 @@ def decrypt(region, ciphertext, confirm, yes):
         LOGGER.exception(e)
         LOGGER.info("Please report at https://github.com/KCOM-Enterprise/cfn-square/issues!")
         sys.exit(1)
+
+
+def _set_profile(profile_name):
+    if profile_name is not None:
+        cache_dir = os.path.expanduser(os.path.join('~', '.aws', 'cli', 'cache'))
+        boto3.setup_default_session(profile_name=profile_name)
+        cred_chain = boto3.DEFAULT_SESSION._session.get_component("credential_provider")
+        cred_chain.get_provider("assume-role").cache = JSONFileCache(cache_dir)
 
 
 def main():
