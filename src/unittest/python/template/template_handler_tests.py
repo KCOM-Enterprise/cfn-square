@@ -21,7 +21,7 @@ class TemplateHandlerTests(TestCase):
         file_loader_mock.get_cloudformation_template.return_value = template
         get_git_repository_remote_url_mock.return_value = "my-repository-url"
 
-        TemplateHandler.get_template("my-template-url", "my-working-directory")
+        TemplateHandler.get_template("my-template-url", "my-working-directory", "eu-west-1", package_bucket=None)
 
         file_loader_mock.get_cloudformation_template.assert_called_once_with("my-template-url", "my-working-directory")
         get_git_repository_remote_url_mock.assert_called_once_with("my-working-directory")
