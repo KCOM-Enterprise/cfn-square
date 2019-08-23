@@ -221,7 +221,7 @@ class CloudFormationApiTests(TestCase):
         cfn.create_stack(stack)
 
         cloudformation_mock.return_value.create_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             Parameters=[('a', 'b')],
             StackName='stack-name',
             Tags=[('any-tag', 'any-tag-value')],
@@ -249,7 +249,7 @@ class CloudFormationApiTests(TestCase):
         cfn.create_stack(stack)
 
         cloudformation_mock.return_value.create_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             Parameters=[('a', 'b')],
             StackName='stack-name',
             Tags=[('any-tag', 'any-tag-value')],
@@ -278,7 +278,7 @@ class CloudFormationApiTests(TestCase):
         cfn.create_stack(stack)
 
         cloudformation_mock.return_value.create_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             Parameters=[('a', 'b')],
             StackName='stack-name',
             Tags=[('any-tag', 'any-tag-value')],
@@ -307,7 +307,7 @@ class CloudFormationApiTests(TestCase):
         cfn.create_stack(stack)
 
         cloudformation_mock.return_value.create_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             OnFailure='DO_NOTHING',
             Parameters=[('a', 'b')],
             StackName='stack-name',
@@ -337,7 +337,7 @@ class CloudFormationApiTests(TestCase):
         cfn.create_stack(stack)
 
         cloudformation_mock.return_value.create_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             OnFailure='DO_NOTHING',
             DisableRollback=True,
             Parameters=[('a', 'b')],
@@ -367,7 +367,7 @@ class CloudFormationApiTests(TestCase):
         cfn.update_stack(stack)
 
         cloudformation_mock.return_value.update_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             Parameters=[('a', 'b')],
             StackName='stack-name',
             Tags=[('any-tag', 'any-tag-value')],
@@ -393,7 +393,7 @@ class CloudFormationApiTests(TestCase):
         cfn.update_stack(stack)
 
         cloudformation_mock.return_value.update_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             Parameters=[('a', 'b')],
             StackName='stack-name',
             Tags=[('any-tag', 'any-tag-value')],
@@ -420,7 +420,7 @@ class CloudFormationApiTests(TestCase):
         cfn.update_stack(stack)
 
         cloudformation_mock.return_value.update_stack.assert_called_once_with(
-            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM'],
+            Capabilities=['CAPABILITY_IAM', 'CAPABILITY_NAMED_IAM', 'CAPABILITY_AUTO_EXPAND'],
             Parameters=[('a', 'b')],
             StackName='stack-name',
             Tags=[('any-tag', 'any-tag-value')],

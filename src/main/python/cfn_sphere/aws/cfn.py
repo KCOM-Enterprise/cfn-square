@@ -327,7 +327,8 @@ class CloudFormation(object):
             "Parameters": stack.get_parameters_list(),
             "Capabilities": [
                 'CAPABILITY_IAM',
-                'CAPABILITY_NAMED_IAM'
+                'CAPABILITY_NAMED_IAM',
+                'CAPABILITY_AUTO_EXPAND'
             ],
             "Tags": stack.get_tags_list()
         }
@@ -361,7 +362,8 @@ class CloudFormation(object):
             "Parameters": stack.get_parameters_list(),
             "Capabilities": [
                 'CAPABILITY_IAM',
-                'CAPABILITY_NAMED_IAM'
+                'CAPABILITY_NAMED_IAM',
+                'CAPABILITY_AUTO_EXPAND'
             ],
             "Tags": stack.get_tags_list()
         }
@@ -413,7 +415,8 @@ class CloudFormation(object):
             "Parameters": stack.get_parameters_list(),
             "Capabilities": [
                 'CAPABILITY_IAM',
-                'CAPABILITY_NAMED_IAM'
+                'CAPABILITY_NAMED_IAM',
+                'CAPABILITY_AUTO_EXPAND'
             ],
             "ChangeSetName": stack.name + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5)),
             "ChangeSetType": change_set_type

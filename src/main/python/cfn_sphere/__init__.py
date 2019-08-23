@@ -57,7 +57,8 @@ class StackActionHandler(object):
             else:
                 stack_policy = None
 
-            template = TemplateHandler.get_template(stack_config.template_url, stack_config.working_dir)
+            template = TemplateHandler.get_template(stack_config.template_url, stack_config.working_dir,
+                                                    self.config.region, stack_config.package_bucket)
             parameters = self.parameter_resolver.resolve_parameter_values(stack_name, stack_config, self.cli_parameters)
 
             stack = CloudFormationStack(template=template,
@@ -94,7 +95,8 @@ class StackActionHandler(object):
             else:
                 stack_policy = None
 
-            template = TemplateHandler.get_template(stack_config.template_url, stack_config.working_dir)
+            template = TemplateHandler.get_template(stack_config.template_url, stack_config.working_dir,
+                                                    self.config.region, stack_config.package_bucket)
             parameters = self.parameter_resolver.resolve_parameter_values(stack_name, stack_config, self.cli_parameters)
 
             stack = CloudFormationStack(template=template,
