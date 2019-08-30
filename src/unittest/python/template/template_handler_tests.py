@@ -17,11 +17,25 @@ class TemplateHandlerTests(TestCase):
     @patch("cfn_sphere.template.template_handler.get_git_repository_remote_url")
     def test_get_template_calls_file_handler(self, get_git_repository_remote_url_mock, template_transformer_mock,
                                              file_loader_mock):
+        class MockConfig:
+            pass
+
+        class MockStackConfig:
+            pass
+
+        config = MockConfig()
+        config.region = "eu-west-1"
+
+        stack_config = MockStackConfig()
+        stack_config.template_url = "my-template-url"
+        stack_config.working_dir = "my-working-directory"
+        stack_config.package_bucket = None
+
         template = CloudFormationTemplate({}, "my-template")
         file_loader_mock.get_cloudformation_template.return_value = template
         get_git_repository_remote_url_mock.return_value = "my-repository-url"
 
-        TemplateHandler.get_template("my-template-url", "my-working-directory", "eu-west-1", package_bucket=None)
+        TemplateHandler.get_template(config, stack_config)
 
         file_loader_mock.get_cloudformation_template.assert_called_once_with("my-template-url", "my-working-directory")
         get_git_repository_remote_url_mock.assert_called_once_with("my-working-directory")

@@ -11,7 +11,7 @@ from cfn_sphere.util import get_logger
 from cfn_sphere.transform import TransformDict, merge_includes
 
 ALLOWED_CONFIG_KEYS = ["region", "stacks", "service-role", "stack-policy-url", "timeout", "tags", "on_failure",
-                       "disable_rollback", "change_set", "package-bucket"]
+                       "disable_rollback", "change_set", "package-bucket", "sam-build"]
 
 
 class Config(object):
@@ -46,6 +46,7 @@ class Config(object):
         self.default_timeout = config_dict.get("timeout", 600)
         self.default_tags = config_dict.get("tags", {})
         self.default_package_bucket = config_dict.get("package-bucket", None)
+        self.default_sam_build = config_dict.get("sam-build", None)
         self.default_failure_action = config_dict.get("on_failure", "ROLLBACK")
         self.default_disable_rollback = config_dict.get("disable_rollback", False)
 
@@ -82,6 +83,7 @@ class Config(object):
                 and self.region == other.region
                 and self.default_tags == other.default_tags
                 and self.default_package_bucket == other.default_package_bucket
+                and self.default_sam_build == other.default_sam_build
                 and self.default_service_role == other.default_service_role
                 and self.default_stack_policy_url == other.default_stack_policy_url
                 and self.default_timeout == other.default_timeout
@@ -107,6 +109,7 @@ class Config(object):
                                                working_dir=self.working_dir,
                                                default_tags=self.default_tags,
                                                default_package_bucket=self.default_package_bucket,
+                                               default_sam_build=self.default_sam_build,
                                                default_timeout=self.default_timeout,
                                                default_service_role=self.default_service_role,
                                                default_stack_policy_url=self.default_stack_policy_url,
@@ -162,7 +165,8 @@ class StackConfig(object):
     STACK_CONFIG_ALLOWED_CONFIG_KEYS = ALLOWED_CONFIG_KEYS + ["parameters", "template-url"]
 
     def __init__(self, stack_config_dict, working_dir=None, default_tags=None,
-                 default_package_bucket=None, default_timeout=600, default_service_role=None,
+                 default_package_bucket=None, default_sam_build=None,
+                 default_timeout=600, default_service_role=None,
                  default_stack_policy_url=None, default_failure_action="ROLLBACK",
                  default_disable_rollback=False):
 
@@ -183,6 +187,9 @@ class StackConfig(object):
         self.tags.update(stack_config_dict.get("tags", {}))
 
         self.package_bucket = stack_config_dict.get("package-bucket", default_package_bucket)
+        self.sam_build = stack_config_dict.get("sam-build", default_sam_build)
+        if self.sam_build is True:
+            self.sam_build = []
         self.service_role = stack_config_dict.get("service-role", default_service_role)
         self.stack_policy_url = stack_config_dict.get("stack-policy-url", default_stack_policy_url)
         self.timeout = stack_config_dict.get("timeout", default_timeout)
@@ -209,6 +216,10 @@ class StackConfig(object):
             if self.package_bucket:
                 assert isinstance(self.package_bucket, str), \
                     "package-bucket must be of type str, not {0}".format(type(self.package_bucket))
+
+            if self.sam_build:
+                assert all(isinstance(arg, str) for arg in self.sam_build), \
+                    "sam-build must be of type bool or list of strs, not {0}".format(type(self.sam_build))
 
             if self.service_role:
                 assert isinstance(self.service_role, str), \
