@@ -17,12 +17,16 @@ before_deploy:
 - pyb -X package
 deploy:
   provider: pypi
-  user: steveparker-kcom
   distributions: sdist
   skip_cleanup: true
   on:
     repo: KCOM-Enterprise/cfn-square
     branch: master
     python: '3.5'
+  user: nathanreynolds-kcom
   password:
-    secure: CD7ZdWHsL42EPsiClV4zU8xFfGHEAYcgcD4dCrXI+d25RuKI2Yr8fMUZNLqPH8kVIjzcRJ2sHve/LQK+imCVSpqc94GkULGMssa/AUbkw1kM7F88YDDBFK2l9ngNlV2RzUoNUOm5Vex5KKgxlbTmd79xcJz7vpUv0705V52lRgcDZsrI7MjMDgs/i2yNaRxsgmKSyMRkMoFCCODfc6386l1zwo3kw1o7oPAlTvYtAIwRd+G20gJw4Qy7yx4tKBGM5VtzrfoS1IWH+hJm179t1ZcOUJkdZ2MLKUPk8gKw4hvAIi4D+/At+IPHPNhBHt++sFyyrTWK2ocoQC8cNOluP52QLfOobn0RO+6rNziCmL59V1o2z0LSsyb2NSf3TzTPmqq1ECc2ckzIDFHyg3DIn5xcEGXQa8KG6jv5OZDmsvn9rJJHhE7LmYc63Nj6/cgdCzOZKIVekFfUqiuJo5KfhDIlivXbdCMnfQGQmW+aLfVIjGA17OiDlJahsOY4JzBZOtuMJHqOw4UldZAfk7WHtMG5chsfObRztJfQxDDvQ0h8j6eJCXzS0skX1cdtx0PI/NBnfLd3jtt886S0wIx6lCvhJuaMX/c2GWXw5DLLEamo/8bLeBICzt7hOCNEfrAC8k/MMuLm0ezaSVE+DKf3R5ey2MFDl09OaUIL3oVNh8w=
+    # To update the PyPI password:
+    #   $ cd cfn-square
+    #   $ docker run -v $PWD:/project caktux/travis-cli encrypt $YOUR_PYPI_PASSWORD --add deploy.password
+    # See <https://docs.travis-ci.com/user/deployment/pypi/>
+    secure: Iubsc6DEpx+DS/XL45lmUB8/z2MDlWawJRiA/4cRkSKV087wPBetgeKBMObPipv7kvD04zIXIUR3gIA568oQ1HX/DPFJkwgFLCOOuuNNhS8I9o3s33oQM0xxpC+8VV1WawwNDHaMScv4WWcPceERnZbeIgKAt8QsO5smEIRAkO2uueTwaP+kzpKaIo4AqYKbrcPVd7kYrEr6kzxKd7xLvF5azbpJ4BKBwSTiJNneOx03PiFsexjdRKA84a3BXoAT4v3pq9pR2SHouNnLdD02HPluccbgxEUqYYCIjXBWPaN4yiqk8cML7FawI+XfZtNCci/H5qM9u9ZB5AmElOmD8xYaCSjvuVddADz8X7D1vHOEJRnATtMkgQ+JO3iekxUFayfKMIpphHDvyhRXs6qrzbr2Bf49u4HA1YjEqcnXCQTyCV0JkMN8IQogPpVk74nuavp1ioPYC2+i7pzMnUQEVAFYlDMzYBAfNOCICUQuVEysyAuQFoPkz14sXHKOwFCfL+ch9+w0UC4wf3UFmQy/E7N7Gy1yNzzjWU7DzQowkeTP7hKKW8OejpKj9cXnnE+Hb4jo1HResAvwovW93b9mj2zObDCSov9prZzEMdYD4vbfkMgAx6QRj/pIlbkkKiNxNrv9Xv5eSgmz9f9+mCYpZzPvMlsRtKwtCfXj1EhP0nw=
