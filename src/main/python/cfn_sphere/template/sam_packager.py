@@ -58,7 +58,7 @@ class CloudFormationSamPackager:
                         AWS_REGION=region,
                         AWS_ACCESS_KEY_ID=aws_credentials.access_key,
                         AWS_SECRET_ACCESS_KEY=aws_credentials.secret_key,
-                        AWS_SESSION_TOKEN=aws_credentials.token
+                        AWS_SESSION_TOKEN=aws_credentials.token or ''
                     ),
                     stdout=subprocess.DEVNULL,
                     stderr=sys.stderr
