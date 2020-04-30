@@ -1,7 +1,6 @@
 sudo: false
 language: python
 python:
-- '3.4'
 - '3.5'
 - '3.6'
 before_install:
@@ -15,14 +14,16 @@ after_success:
 - coveralls --verbose
 before_deploy:
 - pyb -X package
+
 deploy:
   provider: pypi
-  user: steveparker-kcom
-  distributions: sdist
+  user: "__token__"
+  password:
+    secure: "0HWusE4jKLqkLzRwiX2czz8ZyAngIHuF/j9FEj/sy19OT8/Ll3C2KCRLdpVK7fmyOg6fFyvbXtjpEhFsHA2o2UyiCYsit0p7uuZ0k6zSJRdiXOnlEOcDivxSZ8CeI0SK5qhC4hIpYNFjvQxXsr04dsf50RT9wdsCVlB01c8og3gGLeLjkKDdY+1MX8Pfabmap0N5zIS79WB91Zt8tm70kml5eOwk8bsZDzsjzRFFXEHDyIDWnkOOZplIr7CDf+YFFBmrX9yPVFFnT9ZGhUQ++HO8yD7XdTK2nFssHgouZ+FJiBfHKsoFJBwWUszvizjSzK153Mmll8zMXZ1wpuiImKlo1hP7S3ylztEUyLnVe+5YdXd6jbAWfWqQEP3KiL1laZxIAMMObo7F5q8TEHAIuzF1NK5//Q0wUXr2RjNrEVlISnP3l3AISWUj1BMG4DT6tcCEHtHBkyoxHKJMjDr1Q0aRVrYoMf1Wx2NuApA5Edj4Vqitg5wrcR7wfyhb2dWxIKvGMgLFJ0nwVEyy0XRHrvwfAQv5Fioo8qH1McnMudmiH2lTcDz6QodHAZmRzcqhWJ0euJm9NFKFSws+5AU7PY5UlHvK4hxvzE/h7aaYAjPNMG7EuND24VwnAyyICjccP6bbgNzlha8jP2wUNJhzerG58Ic1BxzetEd2uC6oJVU="
+
+  distributions: sdist 
   skip_cleanup: true
   on:
     repo: KCOM-Enterprise/cfn-square
     branch: master
     python: '3.5'
-  password:
-    secure: CD7ZdWHsL42EPsiClV4zU8xFfGHEAYcgcD4dCrXI+d25RuKI2Yr8fMUZNLqPH8kVIjzcRJ2sHve/LQK+imCVSpqc94GkULGMssa/AUbkw1kM7F88YDDBFK2l9ngNlV2RzUoNUOm5Vex5KKgxlbTmd79xcJz7vpUv0705V52lRgcDZsrI7MjMDgs/i2yNaRxsgmKSyMRkMoFCCODfc6386l1zwo3kw1o7oPAlTvYtAIwRd+G20gJw4Qy7yx4tKBGM5VtzrfoS1IWH+hJm179t1ZcOUJkdZ2MLKUPk8gKw4hvAIi4D+/At+IPHPNhBHt++sFyyrTWK2ocoQC8cNOluP52QLfOobn0RO+6rNziCmL59V1o2z0LSsyb2NSf3TzTPmqq1ECc2ckzIDFHyg3DIn5xcEGXQa8KG6jv5OZDmsvn9rJJHhE7LmYc63Nj6/cgdCzOZKIVekFfUqiuJo5KfhDIlivXbdCMnfQGQmW+aLfVIjGA17OiDlJahsOY4JzBZOtuMJHqOw4UldZAfk7WHtMG5chsfObRztJfQxDDvQ0h8j6eJCXzS0skX1cdtx0PI/NBnfLd3jtt886S0wIx6lCvhJuaMX/c2GWXw5DLLEamo/8bLeBICzt7hOCNEfrAC8k/MMuLm0ezaSVE+DKf3R5ey2MFDl09OaUIL3oVNh8w=
