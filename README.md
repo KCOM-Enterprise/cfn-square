@@ -9,13 +9,13 @@ A CLI tool intended to simplify AWS CloudFormation handling. Originally forked f
 ### cfn-sphere
 
 - cfn templates in yaml or json
-- build for human interaction and automation (run 'cf sync stacks.yml' triggered by a git push if you dare ;-)
+- build for human interaction and automation (run 'cf sync stacks.yml' triggered by a git push if you dare -)
 - a source of truth defining CloudFormation stacks with their template and parameters
 - cross referencing parameters between stacks (use a stack output as parameter for another stack)
 - automatic stack dependency resolution including circular dependency detection
 - helper features easing the use of cfn functions like Fn::Join, Ref or Fn::GetAtt
 - easy user-data definition for https://github.com/zalando-stups/taupage
-- allow stack parameter values updates in command line interface 
+- allow stack parameter values updates in command line interface
 - encrypt/decrypt values with AWS KMS (https://aws.amazon.com/de/kms/)
 
 ### cfn-square additional features
@@ -32,7 +32,7 @@ A CLI tool intended to simplify AWS CloudFormation handling. Originally forked f
 
     $ cf --help
     Usage: cf [OPTIONS] COMMAND [ARGS]...
-    
+
       This tool manages AWS CloudFormation templates and stacks by providing an
       application scope and useful tooling.
 
@@ -68,7 +68,7 @@ Create a YAML file containing a region and some stacks in a stacks.yml file f.e.
 
 ### 2. Write your CloudFormation templates
 
-Write your templates and configure them in your stacks.yml. Optionally you can define 
+Write your templates and configure them in your stacks.yml. Optionally you can define
 placeholders in your stack config using the [to-be-replaced] notation and supply a
 'transforms context' file.
 
@@ -109,7 +109,7 @@ cfn-square supports assuming AWS roles. The AWS CLI looks for role configuration
     [default]
     region = eu-west-1
     output = json
-     
+
     [profile accountrole]
     source_profile = default
     mfa_serial = arn:aws:iam::987654321987:mfa/jsmith.kcom.adm
@@ -176,9 +176,9 @@ Cfn-Sphere supports native CloudFormation templates written in JSON or YAML, loc
 
 Requirements:
 
-* python >= 3
-* virtualenv
-* pybuilder
+- python >= 3
+- virtualenv
+- pybuilder
 
 Execute:
 
@@ -192,8 +192,8 @@ Execute:
 
 ## Contribution
 
-* Create an issue to discuss the problem and track changes for future releases
-* Create a pull request with your changes (as small as possible to ease code reviews)
+- Create an issue to discuss the problem and track changes for future releases
+- Create a pull request with your changes (as small as possible to ease code reviews)
 
 ## License
 
