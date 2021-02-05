@@ -15,12 +15,12 @@ use_plugin('filter_resources')
 name = "cfn-square"
 
 authors = [Author('Marco Hoyer', 'marco_hoyer@gmx.de'),
-           Author('Steve Parker', 'steve.parker@kcom.com')]
+           Author('KCOM DevOps Team', 'PSCS_DevOpsDeveloper@kcom.com')]
 description = "cfn-square - A CLI tool intended to simplify AWS CloudFormation handling."
 license = 'APACHE LICENSE, VERSION 2.0'
 summary = 'cfn-square AWS CloudFormation management cli'
 url = 'https://github.com/KCOM-Enterprise/cfn-square'
-version = '0.2.11'
+version = '0.3.0'
 
 default_task = ['clean', 'analyze', 'package']
 
@@ -30,16 +30,10 @@ def set_properties(project):
     project.build_depends_on("unittest2")
     project.build_depends_on("mock")
     project.build_depends_on("moto")
-    project.depends_on('six')
-    project.depends_on("click")
-    project.depends_on("boto3", version=">=1.4.1")
-    project.depends_on("pyyaml", version="==3.13")
-    project.depends_on("networkx")
-    project.depends_on('prettytable')
-    project.depends_on('gitpython')
-    project.depends_on('jmespath')
-    project.depends_on('future')
-    project.depends_on('bs4')
+
+    # load runtime requirements from requirements.txt
+    project.depends_on_requirements("requirements.txt")
+
     project.set_property('integrationtest_inherit_environment', True)
     project.set_property('coverage_break_build', False)
     project.set_property('install_dependencies_upgrade', True)
