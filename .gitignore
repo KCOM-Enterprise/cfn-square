@@ -6,3 +6,6 @@ target
 *.pyc
 *.pyo
 /venv
+.pybuilder
+__pycache__
+.vscode

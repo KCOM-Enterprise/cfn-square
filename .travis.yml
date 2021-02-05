@@ -3,13 +3,17 @@ language: python
 python:
 - '3.5'
 - '3.6'
+- '3.7'
+- '3.8'
 before_install:
 - git fetch --unshallow
 install:
 - pip install pip pybuilder coveralls --upgrade
 - pyb install_dependencies
+- pip install safety
 script:
 - pyb -X run_unit_tests
+- safety check --full-report
 after_success:
 - coveralls --verbose
 before_deploy:
@@ -26,4 +30,4 @@ deploy:
   on:
     repo: KCOM-Enterprise/cfn-square
     branch: master
-    python: '3.5'
+    python: '3.8'
