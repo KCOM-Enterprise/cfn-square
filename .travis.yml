@@ -1,8 +1,10 @@
 sudo: false
 language: python
 python:
-- '3.5'
 - '3.6'
+- '3.7'
+- '3.8'
+- '3.9'
 before_install:
 - git fetch --unshallow
 install:
@@ -26,4 +28,4 @@ deploy:
   on:
     repo: KCOM-Enterprise/cfn-square
     branch: master
-    python: '3.5'
+    python: '3.9'
