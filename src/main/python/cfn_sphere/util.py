@@ -51,6 +51,7 @@ def convert_file(file_path):
     with open(file_path, 'r') as filestream:
         return convert(filestream.read())
 
+
 def kv_list_to_dict(items):
     """
     Converts a list of strings with k=v to dict {k:v}
@@ -61,7 +62,8 @@ def kv_list_to_dict(items):
     for item in items:
         parts = str(item).split("=")
         if not len(parts) == 2:
-            raise CfnSphereException("Could not parse kv pair: {0}, please ensure it is passed as k=v".format(items))
+            raise CfnSphereException(
+                "Could not parse kv pair: {0}, please ensure it is passed as k=v".format(items))
         result[parts[0]] = parts[1]
 
     return result
@@ -91,14 +93,16 @@ def get_pretty_parameters_string(stack):
 
     return table.get_string(sortby="Parameter")
 
+
 def get_pretty_changeset_string(change_set):
     table = PrettyTable(["Action", "Logical ID", "PhysicalID", "ResourceType", "Replacement"])
     for change in change_set:
         detail = change['ResourceChange']
-        table.add_row([detail['Action'], detail['LogicalResourceId'], 
-            detail.get("PhysicalResourceId", ""), detail['ResourceType'], detail.get("Replacement", "")])
+        table.add_row([detail['Action'], detail['LogicalResourceId'],
+                       detail.get("PhysicalResourceId", ""), detail['ResourceType'], detail.get("Replacement", "")])
 
     return table.get_string(sortby="PhysicalID")
+
 
 def get_pretty_stack_outputs(stack_outputs):
     table = PrettyTable(["Output", "Value"])
@@ -127,7 +131,7 @@ def convert_json_to_yaml_string(data):
 def convert_yaml_to_json_string(data):
     if not data:
         return '{}'
-    return json.dumps(yaml.load(data), indent=2)
+    return json.dumps(yaml.load(data, Loader=yaml.FullLoader), indent=2)
 
 
 def convert_dict_to_json_string(data):
@@ -141,7 +145,8 @@ def get_cfn_api_server_time():
         header_date = urllib2.urlopen(url).info().get('Date')
         return parser.parse(header_date)
     except Exception as e:
-        raise CfnSphereException("Could not get AWS server time from {0}. Error: {1}".format(url, e))
+        raise CfnSphereException(
+            "Could not get AWS server time from {0}. Error: {1}".format(url, e))
 
 
 def get_latest_version():
@@ -213,9 +218,11 @@ def get_git_repository_remote_url(working_dir):
         else:
             return None
 
+
 def get_resources_dir():
     script_dir = os.path.dirname(os.path.realpath(__file__))
     return os.path.realpath(os.path.join(script_dir, "../../resources"))
+
 
 if __name__ == "__main__":
     print(get_resources_dir())

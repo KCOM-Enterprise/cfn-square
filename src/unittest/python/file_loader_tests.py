@@ -48,7 +48,8 @@ class FileLoaderTests(TestCase):
             'Description': ''
         }
 
-        get_yaml_or_json_file_mock.return_value = {"Resources": "Foo", "Transform": "transform-section"}
+        get_yaml_or_json_file_mock.return_value = {
+            "Resources": "Foo", "Transform": "transform-section"}
 
         result = FileLoader.get_cloudformation_template("s3://my-bucket/template.yml", None)
 

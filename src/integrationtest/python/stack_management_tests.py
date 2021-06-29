@@ -65,7 +65,8 @@ class CfnSphereIntegrationTest(object):
         stack_handler.create_or_update_stacks()
 
     def sync_stacks_with_parameters_overwrite(self, cli_params):
-        config = Config(config_file=os.path.join(self.test_resources_dir, "stacks.yml"), cli_params=cli_params)
+        config = Config(config_file=os.path.join(
+            self.test_resources_dir, "stacks.yml"), cli_params=cli_params)
         stack_handler = StackActionHandler(config)
         self.logger.info("Syncing stacks")
         stack_handler.create_or_update_stacks()
@@ -113,7 +114,8 @@ class StackManagementTests(CfnSphereIntegrationTest):
         self.assert_equal("changed", vpc_stack_parameters["testtag"])
 
     def test_instance_stack_uses_vpc_outputs(self):
-        self.logger.info("Verifying cfn-sphere-test-instances uses referenced values from cfn-sphere-test-vpc stack")
+        self.logger.info(
+            "Verifying cfn-sphere-test-instances uses referenced values from cfn-sphere-test-vpc stack")
 
         vpc_stack = self.get_stack_description("cfn-sphere-test-vpc")
         instance_stack = self.get_stack_description("cfn-sphere-test-instances")
@@ -137,7 +139,7 @@ class StackManagementTests(CfnSphereIntegrationTest):
         lc = autoscale_conn.describe_launch_configurations(LaunchConfigurationNames=[lc_name])["LaunchConfigurations"][
             0]
         print()
-        user_data = yaml.load(base64.b64decode(lc["UserData"]))
+        user_data = yaml.load(base64.b64decode(lc["UserData"]), Loader=yaml.FullLoader)
 
         # raise Exception(user_data)
 
@@ -149,7 +151,8 @@ class StackManagementTests(CfnSphereIntegrationTest):
 
         cloudwatch_logs_config = user_data["cloudwatch_logs"]
         self.assert_equal("my-syslog-group", cloudwatch_logs_config["/var/log/syslog"])
-        self.assert_equal("my-application-log-group", cloudwatch_logs_config["/var/log/application.log"])
+        self.assert_equal("my-application-log-group",
+                          cloudwatch_logs_config["/var/log/application.log"])
 
         healthcheck_config = user_data["healthcheck"]
         self.assert_equal("elb", healthcheck_config["type"])
@@ -181,9 +184,11 @@ class StackManagementTests(CfnSphereIntegrationTest):
 
     def test_instance_stack_doesnt_update_without_changes(self):
         self.logger.info("Verify stack doesn't update without changes ###")
-        old_stack_last_update = self.get_stack_description("cfn-sphere-test-instances")["LastUpdatedTime"]
+        old_stack_last_update = self.get_stack_description(
+            "cfn-sphere-test-instances")["LastUpdatedTime"]
         self.sync_stacks()
-        new_stack_last_update = self.get_stack_description("cfn-sphere-test-instances")["LastUpdatedTime"]
+        new_stack_last_update = self.get_stack_description(
+            "cfn-sphere-test-instances")["LastUpdatedTime"]
         self.assert_equal(old_stack_last_update, new_stack_last_update)
 
     def test_instances_stack_has_specific_stack_policy_configured(self):

@@ -5,7 +5,10 @@ import os.path
 import re
 
 from future.moves.collections import UserDict, UserList
-class OldStyle: pass
+
+
+class OldStyle:
+    pass
 
 
 def merge_two_dicts(x, y):
@@ -14,6 +17,7 @@ def merge_two_dicts(x, y):
 
     return z
 
+
 def merge_includes(data, path):
     merged_dict = {}
 
@@ -21,9 +25,11 @@ def merge_includes(data, path):
 
     for include in includes:
         with open(path + '/' + include, 'r') as include_stream:
-            merged_dict = merge_two_dicts(merged_dict, yaml.load(include_stream))
-    
+            merged_dict = merge_two_dicts(merged_dict, yaml.load(
+                include_stream, Loader=yaml.FullLoader))
+
     return merge_two_dicts(merged_dict, data)
+
 
 def transmute(data, transform):
     if isinstance(data, dict):
@@ -40,11 +46,12 @@ def transmute(data, transform):
 
         if re.match('[.+]', result):
             raise ValueError('Not all tokens replaced: ' + result)
-        
+
         return result
 
     # if not any of the above, we don't need to transmute it.
     return data
+
 
 class Transform(object):
     def __init__(self, context):
@@ -59,6 +66,7 @@ class Transform(object):
 
         return input
 
+
 class TransformList(UserList):
     def __init__(self, data, context):
         super(TransformList, self).__init__(None, **{})
@@ -70,6 +78,7 @@ class TransformList(UserList):
 
     def __setitem__(self, index, item):
         self.data[index] = transmute(item, self.transform)
+
 
 class TransformDict(UserDict):
     def __init__(self, data, context):
@@ -86,4 +95,3 @@ class TransformDict(UserDict):
 
     def alphanum(self, key):
         return ''.join(c for c in self[key] if c.isalnum())
-
