@@ -24,10 +24,9 @@ class Config(object):
             import_path = os.path.dirname(transform_context)
 
             with open(transform_context, 'r') as stream:
-                transform_context = yaml.load(stream)
+                transform_context = yaml.load(stream, Loader=yaml.SafeLoader)
         else:
             transform_context = {}
-
 
         if isinstance(config_dict, dict):
             self.working_dir = None
@@ -61,15 +60,18 @@ class Config(object):
                     "Invalid syntax, {0} is not allowed as top level config key".format(key)
 
             assert self.region, "Please specify region in config file"
-            assert isinstance(self.region, str), "Region must be of type str, not {0}".format(type(self.region))
+            assert isinstance(self.region, str), "Region must be of type str, not {0}".format(
+                type(self.region))
 
             # stacks config file not required when executing a change set
             if self.change_set is None:
                 assert self.stacks, "Please specify stacks in config file"
-                assert isinstance(self.stacks, TransformDict), "stacks must be of type dict, not {0}".format(type(self.stacks))
+                assert isinstance(self.stacks, TransformDict), "stacks must be of type dict, not {0}".format(
+                    type(self.stacks))
 
             for cli_stack in self.cli_params.keys():
-                assert cli_stack in self.stacks.keys(), "Stack '{0}' does not exist in config".format(cli_stack)
+                assert cli_stack in self.stacks.keys(
+                ), "Stack '{0}' does not exist in config".format(cli_stack)
 
         except AssertionError as e:
             raise InvalidConfigException(e)
@@ -86,7 +88,7 @@ class Config(object):
                 and self.default_stack_policy_url == other.default_stack_policy_url
                 and self.default_timeout == other.default_timeout
                 and self.default_tags == other.default_tags
-                and stacks_equal):
+                    and stacks_equal):
                 return True
         except AttributeError:
             return False
@@ -129,7 +131,8 @@ class Config(object):
         if parameters:
             try:
                 for key_value_parameter_pair in parameters:
-                    stack_and_parameter_key, parameter_value = key_value_parameter_pair.split("=", 1)
+                    stack_and_parameter_key, parameter_value = key_value_parameter_pair.split(
+                        "=", 1)
                     stack, parameter_key = stack_and_parameter_key.split(".", 1)
 
                     stack_parameter = {parameter_key.strip(): parameter_value.strip()}
@@ -146,14 +149,15 @@ class Config(object):
             with open(config_file, "r") as f:
                 context = merge_includes(transform_context, path)
                 config_dict = TransformDict(yaml.safe_load(f.read()), context)
-                
+
                 if not isinstance(config_dict, TransformDict):
                     raise InvalidConfigException(
                         "Config file {0} has invalid content, top level element must be a dict".format(config_file))
 
                 return config_dict
         except ScannerError as e:
-            raise InvalidConfigException("Could not parse {0}: {1} {2}".format(config_file, e.problem, e.problem_mark))
+            raise InvalidConfigException("Could not parse {0}: {1} {2}".format(
+                config_file, e.problem, e.problem_mark))
         except Exception as e:
             raise InvalidConfigException("Could not read yaml file {0}: {1}".format(config_file, e))
 
@@ -204,7 +208,8 @@ class StackConfig(object):
             assert isinstance(self.template_url, str), \
                 "template-url must be of type str, not {0}".format(type(self.template_url))
 
-            assert isinstance(self.timeout, int), "timeout must be of type dict, not {0}".format(type(self.timeout))
+            assert isinstance(self.timeout, int), "timeout must be of type dict, not {0}".format(
+                type(self.timeout))
 
             if self.package_bucket:
                 assert isinstance(self.package_bucket, str), \
@@ -218,7 +223,8 @@ class StackConfig(object):
 
             if self.stack_policy_url:
                 assert isinstance(self.stack_policy_url, str), \
-                    "stack-policy-url must be of type str, not {0}".format(type(self.stack_policy_url))
+                    "stack-policy-url must be of type str, not {0}".format(
+                        type(self.stack_policy_url))
 
             if self.timeout:
                 assert isinstance(self.timeout, int), \
@@ -229,7 +235,8 @@ class StackConfig(object):
                     "on_failure property value must be one of 'DO_NOTHING'|'ROLLBACK'|'DELETE'"
 
             if self.disable_rollback:
-                assert isinstance(self.disable_rollback, bool), "disable_rollback property value must be a boolean"
+                assert isinstance(self.disable_rollback,
+                                  bool), "disable_rollback property value must be a boolean"
 
         except AssertionError as e:
             raise InvalidConfigException(e)
@@ -244,7 +251,7 @@ class StackConfig(object):
                 and self.service_role == other.service_role
                 and self.stack_policy_url == other.stack_policy_url
                 and self.template_url == other.template_url
-                and self.failure_action == other.failure_action):
+                    and self.failure_action == other.failure_action):
                 return True
         except AttributeError:
             return False
