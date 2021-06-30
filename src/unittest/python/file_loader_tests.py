@@ -1,4 +1,5 @@
 import yaml
+import unittest2
 
 try:
     from unittest2 import TestCase
@@ -48,7 +49,8 @@ class FileLoaderTests(TestCase):
             'Description': ''
         }
 
-        get_yaml_or_json_file_mock.return_value = {"Resources": "Foo", "Transform": "transform-section"}
+        get_yaml_or_json_file_mock.return_value = {
+            "Resources": "Foo", "Transform": "transform-section"}
 
         result = FileLoader.get_cloudformation_template("s3://my-bucket/template.yml", None)
 
@@ -69,7 +71,7 @@ class FileLoaderTests(TestCase):
         get_file_mock.return_value = get_file_return_value
 
         FileLoader.get_yaml_or_json_file('foo.json', 'baa')
-        json_mock.loads.assert_called_once_with(get_file_return_value)
+        json_mock.loads.assert_called_once_with(get_file_return_value, encoding="utf-8")
 
     @patch("cfn_sphere.file_loader.yaml")
     @patch("cfn_sphere.file_loader.FileLoader.get_file")
@@ -78,7 +80,13 @@ class FileLoaderTests(TestCase):
         get_file_mock.return_value = get_file_return_value
 
         FileLoader.get_yaml_or_json_file('foo.yaml', 'baa')
-        yaml_mock.load.assert_called_once_with(get_file_return_value)
+        if hasattr(yaml_mock, 'SafeLoader'):
+            loader = yaml_mock.SafeLoader
+        else:
+            # This else condition makes sure that SafeLoader is always returned which is
+            # safer compared to standard Loader/FullLoader/UnsafeLoader YAML class attribute
+            loader = yaml_mock.Loader
+        yaml_mock.load.assert_called_once_with(get_file_return_value, Loader=loader)
 
     @patch("cfn_sphere.file_loader.yaml")
     @patch("cfn_sphere.file_loader.FileLoader.get_file")
@@ -87,7 +95,13 @@ class FileLoaderTests(TestCase):
         get_file_mock.return_value = get_file_return_value
 
         FileLoader.get_yaml_or_json_file('foo.yml', 'baa')
-        yaml_mock.load.assert_called_once_with(get_file_return_value)
+        if hasattr(yaml_mock, 'SafeLoader'):
+            loader = yaml_mock.SafeLoader
+        else:
+            # This else condition makes sure that SafeLoader is always returned which is
+            # safer compared to standard Loader/FullLoader/UnsafeLoader YAML class attribute
+            loader = yaml_mock.Loader
+        yaml_mock.load.assert_called_once_with(get_file_return_value, Loader=loader)
 
     @patch("cfn_sphere.file_loader.FileLoader.get_file")
     def test_get_yaml_or_json_file_raises_exception_invalid_file_extension(self, _):
@@ -290,3 +304,7 @@ class FileLoaderTests(TestCase):
         node_mock = Mock(spec=yaml.ScalarNode)
         with self.assertRaises(CfnSphereException):
             FileLoader.handle_yaml_constructors(loader_mock, "!anyTag", node_mock)
+
+
+if __name__ == "__main__":
+    unittest2.main()

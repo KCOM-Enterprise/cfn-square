@@ -41,7 +41,7 @@ class FileLoader(object):
             "!not": ("Fn::Not", lambda x: x),
             "!or": ("Fn::Or", lambda x: x),
             "!findinmap": ("Fn::FindInMap", lambda x: x),
-            "!getatt": ("Fn::GetAtt", lambda x: str(x).split(".",1)),
+            "!getatt": ("Fn::GetAtt", lambda x: str(x).split(".", 1)),
             "!getazs": ("Fn::GetAZs", lambda x: x),
             "!importvalue": ("Fn::ImportValue", lambda x: x),
             "!join": ("Fn::Join", lambda x: [x[0], x[1]]),
@@ -52,7 +52,8 @@ class FileLoader(object):
         try:
             function, value_transformer = function_mapping[str(suffix).lower()]
         except KeyError as key:
-            raise CfnSphereException("Unsupported cfn intrinsic function tag found: {0}".format(key))
+            raise CfnSphereException(
+                "Unsupported cfn intrinsic function tag found: {0}".format(key))
 
         if isinstance(node, yaml.ScalarNode):
             value = loader.construct_scalar(node)
@@ -61,7 +62,8 @@ class FileLoader(object):
         elif isinstance(node, yaml.MappingNode):
             value = loader.construct_mapping(node)
         else:
-            raise CfnSphereException("Invalid yaml node found while handling cfn intrinsic function tags")
+            raise CfnSphereException(
+                "Invalid yaml node found while handling cfn intrinsic function tags")
 
         return {function: value_transformer(value)}
 
@@ -77,18 +79,15 @@ class FileLoader(object):
 
         try:
             if url.lower().endswith(".json"):
-                return json.loads(file_content)
+                return json.loads(file_content, encoding='utf-8')
             elif url.lower().endswith(".template"):
-                # try to load json 
-                try:
-                    return json.loads(file_content)
-                except Exception as e:
-                    # try to load yaml
-                    yaml.add_multi_constructor(u"", cls.handle_yaml_constructors)
-                    return yaml.load(file_content)            
+                return json.loads(file_content, encoding='utf-8')
             elif url.lower().endswith(".yml") or url.lower().endswith(".yaml"):
-                yaml.add_multi_constructor(u"", cls.handle_yaml_constructors)
-                return yaml.load(file_content)
+                yaml.add_multi_constructor(
+                    u"",
+                    cls.handle_yaml_constructors,
+                    Loader=yaml.SafeLoader)
+                return yaml.load(file_content, Loader=yaml.SafeLoader)
             else:
                 raise CfnSphereException("Invalid suffix, use [json|template|yml|yaml]")
         except Exception as e:
