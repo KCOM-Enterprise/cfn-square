@@ -44,7 +44,7 @@ def transmute(data, transform):
         result = transform.replace(data)
         result = transform.replace(result)
 
-        if re.match('[.+]', result):
+        if re.match('\[.*\]', result):
             raise ValueError('Not all tokens replaced: ' + result)
 
         return result
